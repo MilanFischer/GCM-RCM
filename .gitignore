@@ -1,0 +1,19 @@
+*.nc
+*.png
+*.tif
+*.dbf
+*.prj
+*.shp
+*.shx
+
+# Ignore heavy rasters
+*.tif
+*.tiff
+*.tif
+*.tiff
+data_analysis/elevation_map/plots/ data_analysis/elevation_map/rast/ data_analysis/elevation_map/vect/
+
+# Ignore heavy rasters
+*.tif
+*.tiff
+data_analysis/elevation_map/

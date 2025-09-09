@@ -39,8 +39,8 @@ make_scatter_plot <- function(data,
   XY_range(x = data$x, y = data$y, round = xy_round, offset = xy_offset)
   
   # Overwrite ranges if manual ranges are provided
-  if (X_range_man[1] != FALSE) X_range <- X_range_man
-  if (Y_range_man[1] != FALSE) Y_range <- Y_range_man
+  if (!identical(X_range_man, FALSE)) X_range <- X_range_man
+  if (!identical(Y_range_man, FALSE)) Y_range <- Y_range_man
   
   # Base ggplot setup
   p <- ggplot() +
@@ -147,3 +147,20 @@ make_scatter_plot <- function(data,
   # Return or save ggplot object if needed
   if (save_ggplot2_obj_as != FALSE) assign(x = save_ggplot2_obj_as, value = p, envir = parent.frame())
 }
+
+# Function allowing to put symbols and labels above the lines
+# Useful for example when line is fitted after the plot is already crated
+put_line_behind <- function(ggplot2_plot){
+  # Identify layers that are GeomPoint or GeomTextRepel
+  idx_pts_txt <- which(vapply(ggplot2_plot$layers,
+                              function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                              logical(1)))
+  
+  # Move them to the end so they draw last (on top of lines etc.)
+  if (length(idx_pts_txt)) {
+    ggplot2_plot$layers <- c(ggplot2_plot$layers[-idx_pts_txt], ggplot2_plot$layers[idx_pts_txt])
+  }
+  
+  ggplot2_plot
+}
+

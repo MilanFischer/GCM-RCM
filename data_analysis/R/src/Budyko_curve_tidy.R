@@ -77,10 +77,18 @@ Budyko_curve_optim <- function(PET, ET, P, maxiter = 500, lower = 0, upper = 100
 #-------------------------------------------------------------------------------
 
 Budyko_curve <- function(annual_stats_wide,
-                         pet_col = "ETo_FAO56_alfalfa", et_col = "ET", p_col = "P",
-                         X_range = c(0, 2), Y_range = c(0, 1.06),
-                         Xin_range = c(0.9, 1.5), Yin_range = c(0.6, 0.8),
-                         plot = TRUE, plot_name = "Budyko_curve_ggplot2.png") {
+                         pet_col = "ETo_FAO56_alfalfa",
+                         et_col = "ET",
+                         p_col = "P",
+                         X_range = c(0, 2),
+                         Y_range = c(0, 1.06),
+                         Xin_range = c(0.9, 1.5),
+                         Yin_range = c(0.6, 0.8),
+                         boundary_line_col = "gray60",
+                         boundary_line_type = "solid",
+                         boundary_line_size = 0.1,
+                         plot = TRUE,
+                         plot_name = "Budyko_curve_ggplot2.png") {
   
   # -- Axis buffer extensions
   X_range <- X_range + c(-diff(X_range) * 0.04, diff(X_range) * 0.04)
@@ -217,8 +225,11 @@ Budyko_curve <- function(annual_stats_wide,
     p <- ggplot() +
       
       # Add continuous boundary line from (0,0) to (1,1) and then horizontally at y = 1
-      geom_line(data = boundary_line, aes(x = x, y = y), color = "gray", linetype = "solid", size = 0.1, na.rm = TRUE) +
-      
+      geom_line(data = boundary_line, aes(x = x, y = y),
+                color = boundary_line_col,
+                linetype = boundary_line_type,
+                size = boundary_line_size , na.rm = TRUE) +
+
       # Add continuous Budyko curves
       geom_line(data = lines_data, aes(x = X, y = Y, group = Scenario, color = Scenario, linetype = LineType), na.rm = TRUE) +
       
@@ -234,7 +245,7 @@ Budyko_curve <- function(annual_stats_wide,
       )) +
       scale_linetype_manual(values = c("solid" = "solid", "dashed" = "dashed")) +
       scale_size_continuous(range = c(0.2, 0.6)) +
-      labs(x = expression(E[p] * "/" * P), y = expression("ET/P")) +
+      labs(x = expression("AI = PET/P"), y = expression("EI = ET/P")) +
       scale_x_continuous(limits = X_range, expand = c(0, 0)) +
       scale_y_continuous(limits = Y_range, expand = c(0, 0)) +
       theme_bw() +
@@ -265,7 +276,7 @@ Budyko_curve <- function(annual_stats_wide,
         "CMIP5" = COL_CMIP5, "CMIP6" = COL_CMIP6, "RCMs" = COL_RCMs,
         "CMIP5" = COL_CMIP5, "CMIP6" = COL_CMIP6)) +
       scale_size_continuous(range = c(0.2, 0.6)) +
-      labs(x = expression(E[p] * "/" * P), y = expression("ET/P")) +
+      labs(x = expression("AI = PET/P"), y = expression("EI = ET/P")) +
       scale_x_continuous(limits = Xin_range, expand = c(0, 0)) +
       scale_y_continuous(limits = Yin_range, expand = c(0, 0)) +
       ggtitle("Ensemble means") +
