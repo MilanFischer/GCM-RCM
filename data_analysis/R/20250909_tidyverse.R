@@ -3108,7 +3108,7 @@ jarvis_out |>
   select(VPD, ET, P, Ta, label, model, PERIOD) |>
   na.omit() |>
   arrange(VPD) |>
-  write.csv("../models_rank.csv", row.names = FALSE)
+  write.csv("../outputs/models_rank.csv", row.names = FALSE)
 
 ################################################################################
 
