@@ -18,11 +18,12 @@ library(tidyverse)
 
 # Preprocess
 source("./src/general_functions.R")
-source('./src/make_plot_tidy.R')
+source("./src/make_plot_tidy.R")
+source("./src/resize_plot_elements.R")
 source("./src/colors.R")
 source("./src/Budyko_curve_tidy.R")
 
-# VPD from daily values and then averaged is about 15% higher, so constant 1.15 can be applied
+# VPD from daily values is in average about 15% higher, so constant 1.15 can be applied
 
 # Plotting setup
 # COL_CMIP5="#117733"
@@ -88,7 +89,7 @@ AP <- 97.73785 # From ERA5-land for the domain in 1981–2005
 CO2_2076_2100_RCP85 <- 979.42 # ppm
 CO2_1981_2005 <- 359.47
 
-# Optimal theory
+# dgs/gs predicted based on optimality theory
 # 0.7–0.9
 s <- 0.7
 
@@ -103,7 +104,6 @@ a2
 # a2 <- 510 
 -1/((a2 / (s * CO2_1981_2005)) + 1) * (CO2_2076_2100_RCP85 - CO2_1981_2005) / CO2_1981_2005
 
-
 # The correction by Yang et al. (2018) https://doi.org/10.1038/s41558-018-0361-0
 S_rs_CO2 <- 0.09 # ppm^-1
 
@@ -112,6 +112,9 @@ rs_CO2 <- function(rs_1981_2005 = 70, S_rs_CO2 = 0.09){
   rs <- rs_1981_2005 * (1 + S_rs_CO2 / 100 * (CO2_2076_2100_RCP85 - CO2_1981_2005))
   return(rs)
 }
+
+# dgs/gs predicted by Yang et al. (2018)
+(1/rs_CO2(70)*1000 - (1 / 70 * 1000)) / (1 / 70 * 1000)
 
 # Inverse of the correction
 rs_CO2_inv <- function(rs_2076_2100 = 109.0568, S_rs_CO2 = 0.09){
@@ -527,7 +530,6 @@ diff <- annual_stats |>
 
 # Combine the two data frames
 all_diff <- bind_rows(norm_diff, diff)
-
 
 # Reshape data: pivot wider to have P and ET in separate columns
 Data_to_plot <- all_diff |> 
@@ -1035,7 +1037,7 @@ attr(Data_to_plot_II, "description") <- "This data frame was created to plot not
 # VPD versus g_eff
 
 Plot_labels <- tibble(
-  x = c(0.785, 0.785, 0.785),
+  x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
   model = c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
@@ -1045,10 +1047,11 @@ make_scatter_plot(
   data = Data_to_plot_II |>
     mutate(x = VPD, y = g_eff, model = interaction(model, PERIOD, drop = TRUE)) |>
     select(model, label, color, fill, border, shape, linetype, x, y),
+  Y_range_man = c(2, 17.2),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
-  y_lab = bquote('g'['eff']~(mm/s)),
+  y_lab = bquote("g"["eff"]~"(mm s"^"-1"*")"),
   hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
   plot_labels = Plot_labels,
   save_ggplot2_obj_as="p"
@@ -1063,19 +1066,78 @@ add_manual_legend <- function(p, x1 = 0.80, x2 = 0.84, y1 = 0.75, y2 = 0.70){
   p <- p +
     annotate("point", x = rescale(x1, X_range), y = rescale(y1, Y_range), shape = 21, size = 2, stroke = 0.8,
              color = "#2b2b2b", fill = NA) +
-    annotate("text", x = rescale(x2 , X_range), y = rescale(y1, Y_range), label = "History", size = 3, hjust = 0)
+    annotate("text", x = rescale(x2 , X_range), y = rescale(y1, Y_range), label = "1981–2005", size = 3, hjust = 0)
   
   p <- p +
     annotate("point", x = rescale(x1, X_range), y = rescale(y2, Y_range), shape = 24, size = 2, stroke = 0.8,
              color = "#2b2b2b", fill = NA) +
-    annotate("text", x = rescale(x2 , X_range), y = rescale(y2, Y_range), label = "Scenario", size = 3, hjust = 0)
+    annotate("text", x = rescale(x2 , X_range), y = rescale(y2, Y_range), label = "2076–2100 RCP 8.5", size = 3, hjust = 0)
   
   return(p)
 }
 
-p <- add_manual_legend(p, x1 = 0.80, x2 = 0.84, y1 = 0.75, y2 = 0.70)
+p <- add_manual_legend(p, x1 = 0.06, x2 = 0.1, y1 = 0.1, y2 = 0.05)
 
 ggsave('../plots/ggplot2/g_eff_versus_VPD_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+# Remove layers that are geom_smooth (fit lines and ribbons)
+p$layers <- lapply(p$layers, function(layer) {
+  if (inherits(layer$geom, c("GeomSmooth", "GeomRibbon"))) {
+    NULL
+  } else {
+    layer
+  }
+})
+
+# Drop NULLs
+p$layers <- Filter(Negate(is.null), p$layers)
+
+# Now plot without the smooth fit lines or confidence belts
+ggsave('../plots/ggplot2/g_eff_versus_VPD_ggplot2_no_fit_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+# Normalized geff vs. VPD
+LM_eq_labels <- tibble(
+  x = c(0.53, 0.53, 0.53),
+  y = c(0.94, 0.86, 0.78)
+)
+
+make_scatter_plot(data = Data_to_plot |>
+                    select(d_VPD_over_VPD, d_g_eff_over_g_eff, model, color, fill, border, shape, label, linetype) |> 
+                    rename(x = "d_VPD_over_VPD", y = "d_g_eff_over_g_eff"),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*g[eff]~"/"~g[eff]),
+                  hline = FALSE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  LM_eq_labels = LM_eq_labels,
+                  save_ggplot2_obj_as="p_geff_VPD_norm")
+
+p_geff_VPD_norm <- p_geff_VPD_norm +
+  theme(
+    panel.background = element_rect(fill = NA, colour = NA),  # panel area transparent
+    plot.background  = element_rect(fill = NA, colour = NA)   # outer background transparent
+  )
+
+
+# Shrink text size in geom_text_repel and annotate("text")
+p_geff_VPD_norm <- resize_plot_elements(
+  p_geff_VPD_norm,
+  repel_size = 1,
+  text_size  = 3
+)
+
+# Combining plots
+combined_plot <- p + 
+  inset_element(
+    p_geff_VPD_norm,
+    left   = 0.3,  # relative x-position (0–1)
+    bottom = 0.3,  # relative y-position (0–1)
+    right  = 1.0,  # relative width (0–1)
+    top    = 1.0   # relative height (0–1)
+  )
+
+# Save the plot
+ggsave('../plots/ggplot2/g_eff_versus_VPD_ggplot2_no_fit_and_delta_geff_over_geff_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = combined_plot, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 #-------------------------------
 # VPD versus g_eff_corr for GCMs
@@ -1739,13 +1801,13 @@ out_BC_FAO56_alfalfa <- Budyko_curve(annual_stats_wide,
              pet_col = "ETo_FAO56_alfalfa", et_col = "ET", p_col = "P",
              X_range = c(0.0, 2.2), Y_range = c(0.0, 1.06),
              Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
-             plot = TRUE, plot_name = "Budyko_curve_ggplot2.png")
+             plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ggplot2.png")
 
 out_BC_FAO56_alfalfa_CO2_corr <- Budyko_curve(annual_stats_wide,
              pet_col = "ETo_FAO56_alfalfa_GCM_CO2_corr", et_col = "ET", p_col = "P",
              X_range = c(0.0, 2.2), Y_range = c(0.0, 1.06),
              Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
-             plot = TRUE, plot_name = "Budyko_curve_CO2_ggplot2.png")
+             plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_CO2_ggplot2.png")
 
 # Add label "a)" to the first plot
 p9 <- out_BC_FAO56_alfalfa$out_plot + 
@@ -2063,11 +2125,11 @@ ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
 ##########################################################
 #‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 
-Fit_ET_norm <- lm(Data_to_plot$d_ET_over_ET~Data_to_plot$d_VPD_over_VPD)
+Fit_ET_norm  <- lm(Data_to_plot$d_ET_over_ET~Data_to_plot$d_VPD_over_VPD)
 Fit_PET_norm <- lm(Data_to_plot$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$d_VPD_over_VPD)
-Fit_P_norm <- lm(Data_to_plot$d_P_over_P~Data_to_plot$d_VPD_over_VPD)
-Fit_AI_norm <- lm(Data_to_plot$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$d_VPD_over_VPD)
-Fit_EI_norm <- lm(Data_to_plot$d_EI_over_EI~Data_to_plot$d_VPD_over_VPD)
+Fit_P_norm   <- lm(Data_to_plot$d_P_over_P~Data_to_plot$d_VPD_over_VPD)
+Fit_AI_norm  <- lm(Data_to_plot$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$d_VPD_over_VPD)
+Fit_EI_norm  <- lm(Data_to_plot$d_EI_over_EI~Data_to_plot$d_VPD_over_VPD)
 
 plot(Data_to_plot_II$VPD, Data_to_plot_II$ET)
 plot(Data_to_plot_II$VPD, Data_to_plot_II$ETo_FAO56_alfalfa)
@@ -3050,8 +3112,6 @@ jarvis_out |>
 
 ################################################################################
 
-# These are the best parameters found so far (RMSE = 50.042, R^2 = 0.558) – when VPD is NOT normalized
-
 Rg_min    <- jarvis_bundle$jarvis_pars["Rg_min"]
 Rg_max    <- jarvis_bundle$jarvis_pars["Rg_max"]
 Ta_min    <- jarvis_bundle$jarvis_pars["Ta_min"]
@@ -3329,29 +3389,73 @@ plot(jarvis_out$VPD,
      with(jarvis_out, K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD),
      xlab = "VPD", ylab = "ET")
 
-plot(jarvis_out$VPD,
-     with(jarvis_out, K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE))),
-     xlab = "VPD", ylab = "ET")
+# Predicted ET vs. observed
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
+                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_vs_VPD")
+
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
+                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_mean_fP_vs_VPD")
+
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE)), model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_mean_fVPD_vs_VPD")
 
 # VPD effect
-plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * fP_mean * fRg_mean * fTa_mean * fVPD),
-     xlab = "VPD", ylab = "ET", title = "VPD effect")
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa_mean * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_VPD_effect_vs_VPD")
 
 # Precipitation effect
-plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * fP * fRg_mean * fTa_mean * fVPD_mean),
-     xlab = "VPD", ylab = "ET", title = "P effect")
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP * fRg_mean * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_P_effect_vs_VPD")
 
 # Temperature effect
-plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * fP_mean * fRg_mean * fTa * fVPD_mean),
-     xlab = "VPD", ylab = "ET", title = "Ta effect")
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_Ta_effect_vs_VPD")
+
 
 # Radiation effect
-plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * fP_mean * fRg * fTa_mean * fVPD_mean),
-     xlab = "VPD", ylab = "ET", title = "Rg effect")
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_Rg_effect_vs_VPD")
+
+
+print(ET_VPD_effect_vs_VPD)
+print(ET_P_effect_vs_VPD)
+print(ET_Ta_effect_vs_VPD)
+print(ET_Rg_effect_vs_VPD)
 
 # ET - VPD effect
 plot(jarvis_out$VPD,
