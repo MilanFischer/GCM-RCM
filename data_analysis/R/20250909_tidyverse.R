@@ -2841,14 +2841,10 @@ ggsave('../plots/ggplot2/geff_corr_vs_geff.png', plot = test_plot, width = Pl_wi
 #------------------------------
 # Fitting Jarvis reduction model
 Fit_Jarvis <- FALSE
-# source("./src/Jarvis_model.R")
-# source("./src/Jarvis_model_mult.R")
-# source("./src/Jarvis_model_FINAL.R")
-# source("./src/Jarvis_model_sensitivity_FINAL.R")
 if(Fit_Jarvis){
   source("./src/Jarvis_model_min_max.R")
 }else{
-  load("./RData/20250903_jarvis_objects.RData")
+  load("./RData/20250910_jarvis_objects.RData")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }
 source("./src/Jarvis_ALE_curves_smoothed_overlay.R")
@@ -3047,27 +3043,24 @@ ggsave("../plots/ggplot2/g_eff_vs_sqrt_VPD,ET_vs_VPD,Rg,Ta,P_ggplot2_TIDY.png", 
 
 # Sort by VPD
 jarvis_out |> 
-  arrange(VPD) |> 
-  select(VPD, ET, label, model, PERIOD) |> 
+  select(VPD, ET, P, Ta, label, model, PERIOD) |>
+  na.omit() |>
+  arrange(VPD) |>
   write.csv("../models_rank.csv", row.names = FALSE)
-
-jarvis_out |> 
-  select(VPD, ET, P, Ta, label, model, PERIOD) |> 
-  write.csv("../models_rank_2.csv", row.names = FALSE)
 
 ################################################################################
 
 # These are the best parameters found so far (RMSE = 50.042, R^2 = 0.558) – when VPD is NOT normalized
-g_eff_max <- 8.781304
-Rg_min    <- -228.4598
-Rg_max    <- 1695.560
-Ta_min    <- -168.6703
-Ta_max    <- 69.05149
-P_min     <- -184.2605
-P_max     <- 5862.377
-k_CO2     <- 5.277623e-17
-b0_VPD    <- -27.76069
-b1_VPD    <- 36.09256
+
+Rg_min    <- jarvis_bundle$jarvis_pars["Rg_min"]
+Rg_max    <- jarvis_bundle$jarvis_pars["Rg_max"]
+Ta_min    <- jarvis_bundle$jarvis_pars["Ta_min"]
+Ta_max    <- jarvis_bundle$jarvis_pars["Ta_max"]
+P_min     <- jarvis_bundle$jarvis_pars["P_min"]
+P_max     <- jarvis_bundle$jarvis_pars["P_max"]
+k_CO2     <- jarvis_bundle$jarvis_pars["k_CO2"]
+b0_VPD    <- jarvis_bundle$jarvis_pars["b0_VPD"]
+b1_VPD    <- jarvis_bundle$jarvis_pars["b1_VPD"]
 
 jarvis_out <- jarvis_out |> 
   mutate(
@@ -3075,7 +3068,7 @@ jarvis_out <- jarvis_out |>
     fTa = pmin(1, pmax(0, (Ta - Ta_min) / (Ta_max - Ta_min))),
     fP  = pmin(1, pmax(0, (P  - P_min ) / (P_max - P_min))),
     fVPD = b0_VPD + b1_VPD * 1 / (sqrt(VPD)),
-    g_eff_recovered = g_eff_max * fP * fRg * fTa * fVPD,
+    g_eff_recovered = fP * fRg * fTa * fVPD,
     ET_no_recovered = K_ET * g_eff_recovered
   )
 
@@ -3268,7 +3261,7 @@ plot(jarvis_diffs$dVPD_norm,
             dg_eff_predicted * dVPD / (g_eff_hist * VPD_hist) ) )
 
 
-# To simplify the most, use jsut this one, which depends on VPD!
+# To simplify the most, use just this one, which depends on VPD!
 plot(jarvis_diffs$dVPD_norm,
      with(jarvis_diffs, dVPD_norm + dfVPD_norm +
             dfVPD * dVPD / (fVPD_hist * VPD_hist) ) )
@@ -3330,53 +3323,40 @@ plot(jarvis_out$VPD,
      with(jarvis_out, ET))
 
 plot(jarvis_out$VPD,
-     with(jarvis_out, K_ET * g_eff_max * fP * fRg * fTa * fVPD))
+     with(jarvis_out, K_ET * fP * fRg * fTa * fVPD))
 
 plot(jarvis_out$VPD,
-     with(jarvis_out, K_ET * g_eff_max * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD),
+     with(jarvis_out, K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD),
      xlab = "VPD", ylab = "ET")
 
 plot(jarvis_out$VPD,
-     with(jarvis_out, K_ET * g_eff_max * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE))),
+     with(jarvis_out, K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE))),
      xlab = "VPD", ylab = "ET")
 
 # VPD effect
 plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * g_eff_max * fP_mean * fRg_mean * fTa_mean * fVPD),
+     with(jarvis_out,  K_ET * fP_mean * fRg_mean * fTa_mean * fVPD),
      xlab = "VPD", ylab = "ET", title = "VPD effect")
 
 # Precipitation effect
 plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * g_eff_max * fP * fRg_mean * fTa_mean * fVPD_mean),
+     with(jarvis_out,  K_ET * fP * fRg_mean * fTa_mean * fVPD_mean),
      xlab = "VPD", ylab = "ET", title = "P effect")
 
 # Temperature effect
 plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * g_eff_max * fP_mean * fRg_mean * fTa * fVPD_mean),
+     with(jarvis_out,  K_ET * fP_mean * fRg_mean * fTa * fVPD_mean),
      xlab = "VPD", ylab = "ET", title = "Ta effect")
 
 # Radiation effect
 plot(jarvis_out$VPD,
-     with(jarvis_out,  K_ET * g_eff_max * fP_mean * fRg * fTa_mean * fVPD_mean),
+     with(jarvis_out,  K_ET * fP_mean * fRg * fTa_mean * fVPD_mean),
      xlab = "VPD", ylab = "ET", title = "Rg effect")
 
 # ET - VPD effect
 plot(jarvis_out$VPD,
-     with(jarvis_out, ET - K_ET * g_eff_max * fP_mean * fRg_mean * fTa_mean * fVPD),
+     with(jarvis_out, ET - K_ET * fP_mean * fRg_mean * fTa_mean * fVPD),
      title = "VPD effect")
-
-
-
-par_hat[1] = g_eff_max
-par_hat[2] = Rg_min
-par_hat[3] = Rg_max
-par_hat[4] = Ta_min
-par_hat[5] = Ta_max
-par_hat[6] = P_min
-par_hat[7] = P_max
-par_hat[9] = b0_VPD
-par_hat[10] = b1_VPD
-
 
 ################################################################################
 

@@ -30,7 +30,7 @@ use_CO2 <- TRUE
 use_VPD <- TRUE
 
 # fVPD handling
-fVPD_mode <- "given"       # "given" or "optimize"
+fVPD_mode <- "optimize"       # "given" or "optimize"
 b0_VPD_raw <- -12.613#-6.909279       # used if fVPD_mode == "given"
 b1_VPD_raw <- 11.093#8.282555
 
@@ -44,8 +44,8 @@ clamp_P      <- TRUE
 n_max_iter   <- 25000
 
 # Set the metadat and the ouput file name
-metadata <- "Jarvis parameter set and output tibble. Created 2025-09-04 by user. Data includes g_eff model outputs and climate drivers. VPD not optimzed and paremter sused from fit for historical period."
-out_file <- "./RData/20250904_jarvis_objects.RData"
+metadata <- "Jarvis parameter set and output tibble. Created 2025-09-10 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
+out_file <- "./RData/20250910_jarvis_objects.RData"
 
 # Guard
 eps <- 1e-6
