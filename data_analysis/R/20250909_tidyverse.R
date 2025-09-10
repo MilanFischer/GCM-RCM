@@ -1636,127 +1636,55 @@ p <- ggplot(Data_to_plot_II, aes(x = PERIOD, y = ω, fill = model)) +
 # Save the plot to a file
 ggsave(filename = "../plots/ggplot2/ω_alpha_ggplot2_TIDY.png", plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = "mm")
 
+# Make a simple plot with linear regression and equation
+simple_scatter_plot <- function(data, x, y, xpos = Inf, ypos = Inf,
+                                hjust = 1.1, vjust = 2) {
+  x_expr <- rlang::enquo(x)
+  y_expr <- rlang::enquo(y)
+  
+  # fit the model
+  fit <- lm(rlang::eval_tidy(y_expr, data) ~ rlang::eval_tidy(x_expr, data))
+  
+  # build label
+  label <- paste0(
+    "y = ", round(coef(fit)[2], 3), "x + ", round(coef(fit)[1], 3),
+    "   R² = ", round(summary(fit)$r.squared, 3)
+  )
+  
+  # plot
+  ggplot(data, aes(x = !!x_expr, y = !!y_expr)) +
+    geom_point(alpha = 0.6) +
+    geom_smooth(method = "lm", se = FALSE, color = "blue") +
+    annotate("text", x = xpos, y = ypos,
+             hjust = hjust, vjust = vjust, label = label) +
+    theme_bw()
+}
 
 # Omega and VPD
-Data_to_plot_II |>
-  ggplot(aes(VPD, ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",  # place in top right
-    label.y.npc = "top"
-  ) +
-  labs(x = "VPD", y = "ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, VPD, ω)
 
 # Omega and P - ET
-Data_to_plot_II |>
-  ggplot(aes(P - ET, ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",  # place in top right
-    label.y.npc = "top"
-  ) +
-  labs(x = "P - ET", y = "ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, P - ET, ω)
 
 # Omega and PET / P
-Data_to_plot_II |>
-  ggplot(aes(PET / P, ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",  # place in top right
-    label.y.npc = "top"
-  ) +
-  labs(x = "PET / P", y = "ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, PET / P, ω)
 
 # Omega and LAI
-Data_to_plot_II |>
-  ggplot(aes(LAI, ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",  # place in top right
-    label.y.npc = "top"
-  ) +
-  labs(x = "PET / P", y = "ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, LAI, ω)
 
 # Omega and g_eff
-Data_to_plot_II |>
-  ggplot(aes(g_eff, ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",
-    label.y.npc = "top"
-  ) +
-  labs(x = "g_eff", y = "ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, g_eff, ω,
+                    xpos = -Inf, ypos = Inf, hjust = -0.1, vjust = 2)
 
 # Omega^-1 and g_eff
-Data_to_plot_II |>
-  ggplot(aes(g_eff, 1 / ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",
-    label.y.npc = "top"
-  ) +
-  labs(x = "g_eff", y = "1 / ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, g_eff, 1 / ω)
 
 # Omega and ET / PET
-Data_to_plot_II |>
-  ggplot(aes(ET / PET, ω)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",  # place in top right
-    label.y.npc = "top"
-  ) +
-  labs(x = "ET / PET", y = "ω") +
-  theme_minimal()
+simple_scatter_plot(Data_to_plot_II, ET / PET, ω,
+                    xpos = -Inf, ypos = Inf, hjust = -0.1, vjust = 2)
 
 # ET / PET and VPD
-Data_to_plot_II |>
-  ggplot(aes(ET / PET, VPD)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "right",  # place in top right
-    label.y.npc = "top"
-  ) +
-  labs(x = "ET / PET", y = "VPD") +
-  theme_minimal()
-
+simple_scatter_plot(Data_to_plot_II, ET / PET, VPD)
 
 
 #######################
@@ -2032,8 +1960,7 @@ Budyko_plot <- Budyko_plot +
   annotate("text",
            x = rescale(0.3, X_range),
            y = rescale(0.9, Y_range),
-           label = "bold('Energy') ~ italic('vs.') ~ bold('Water') ~ 'limitation'",
-           parse = TRUE,
+           label = bquote(bold("Energy") ~ italic("vs.") ~ bold("Water")~"limitation"),
            hjust = 0, color = "#333333", size = 4) +
 
   # Left-pointing arrow above "Energy"
