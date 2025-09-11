@@ -16,6 +16,10 @@ library(ggrepel)
 library(numDeriv)
 library(tidyverse)
 
+# To set the RStudio theme like VS Code use:
+# https://github.com/anthonynorth/rscodeio
+# https://github.com/anthonynorth/rscodeio/blob/master/inst/resources/rscodeio.rstheme
+
 # Preprocess
 source("./src/general_functions.R")
 source("./src/make_plot_tidy.R")
