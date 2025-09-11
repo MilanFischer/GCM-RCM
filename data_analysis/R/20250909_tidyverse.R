@@ -16,9 +16,11 @@ library(ggrepel)
 library(numDeriv)
 library(tidyverse)
 
-# To set the RStudio theme like VS Code use:
+# To set the RStudio theme like VS Code (my personal preference) use:
 # https://github.com/anthonynorth/rscodeio
 # https://github.com/anthonynorth/rscodeio/blob/master/inst/resources/rscodeio.rstheme
+# If the installation prompts do not work, copy the file rscodeio.rstheme into %AppData%\RStudio\themes\ ion Windows or ~/.config/rstudio/themes/ Linux
+# Then use Tools → Global Options → Appearance → Add… and select the file
 
 # Preprocess
 source("./src/general_functions.R")
@@ -30,9 +32,9 @@ source("./src/Budyko_curve_tidy.R")
 # VPD from daily values is in average about 15% higher, so constant 1.15 can be applied
 
 # Plotting setup
-# COL_CMIP5="#117733"
-# COL_CMIP6="#AA4499"
-# COL_RCMs="#6699CC"
+# COL_CMIP5 <- "#117733"
+# COL_CMIP6 <- "#AA4499"
+# COL_RCMs <- "#6699CC"
 
 COL_CMIP5 <- "#1c91df"
 COL_CMIP6 <- "#4e79a7"
@@ -43,12 +45,12 @@ c("#1f77b4", "#2a9df4", "#4e79a7", "#5f9ea0", "#1c91df", "#4682b4",
   "#0073cf", "#87cefa", "#2e8b57", "#0a74da", "#d62728", "#ff6347",
   "#e74c3c", "#c94c4c", "#ff4500", "#3cb371", "#2e8b57", "#66cdaa")
 
-Pl_width = 120
-Pl_height = 120
-oma_mm = c(20, 20, 0, 0)
-mar_mm = c(0, 0, 0, 0) + 2
-n_row = 1
-n_col = 1
+Pl_width <- 120
+Pl_height <- 120
+oma_mm <- c(20, 20, 0, 0)
+mar_mm <- c(0, 0, 0, 0) + 2
+n_row <- 1
+n_col <- 1
 
 RES = 600
 
@@ -118,7 +120,7 @@ rs_CO2 <- function(rs_1981_2005 = 70, S_rs_CO2 = 0.09){
 }
 
 # dgs/gs predicted by Yang et al. (2018)
-(1/rs_CO2(70)*1000 - (1 / 70 * 1000)) / (1 / 70 * 1000)
+(1 / rs_CO2(70) * 1000 - (1 / 70 * 1000)) / (1 / 70 * 1000)
 
 # Inverse of the correction
 rs_CO2_inv <- function(rs_2076_2100 = 109.0568, S_rs_CO2 = 0.09){
@@ -3138,6 +3140,100 @@ jarvis_out <- jarvis_out |>
 
 plot(jarvis_out$ET_predicted, jarvis_out$ET_no_recovered)
 
+# Now hold all but one functions at their mean and see the response of ET
+fP_mean <- mean(jarvis_out$fP, na.rm = TRUE)
+fRg_mean <- mean(jarvis_out$fRg, na.rm = TRUE)
+fTa_mean <- mean(jarvis_out$fTa, na.rm = TRUE)
+fVPD_mean <- mean(jarvis_out$fVPD, na.rm = TRUE)
+
+plot(jarvis_out$VPD,
+     with(jarvis_out, ET))
+
+plot(jarvis_out$VPD,
+     with(jarvis_out, K_ET * fP * fRg * fTa * fVPD))
+
+plot(jarvis_out$VPD,
+     with(jarvis_out, K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD),
+     xlab = "VPD", ylab = "ET")
+
+# Predicted ET vs. observed
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
+                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_vs_VPD")
+
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
+                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_mean_fP_vs_VPD")
+
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE)), model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_mean_fVPD_vs_VPD")
+
+# VPD effect
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa_mean * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_VPD_effect_vs_VPD")
+
+# Precipitation effect
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP * fRg_mean * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_P_effect_vs_VPD")
+
+# Temperature effect
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_Ta_effect_vs_VPD")
+
+
+# Radiation effect
+make_scatter_plot(data = jarvis_out  |>
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_Rg_effect_vs_VPD")
+
+
+print(ET_VPD_effect_vs_VPD)
+print(ET_P_effect_vs_VPD)
+print(ET_Ta_effect_vs_VPD)
+print(ET_Rg_effect_vs_VPD)
+
+# ET - VPD effect
+plot(jarvis_out$VPD,
+     with(jarvis_out, ET - K_ET * fP_mean * fRg_mean * fTa_mean * fVPD),
+     title = "VPD effect")
+
+################################################################################
+
+
+
+
 
 # helper: normalized difference
 .normdiff <- function(base, fut, var_name = "") {
@@ -3212,7 +3308,7 @@ points(jarvis_diffs$dVPD_norm,
      with(jarvis_diffs, dET_norm_from_VPD_g_eff_Ta),
      col = "red", pch = 3, cex = 0.8)
 
-# If you ignore the temperature dependence, there is some scatter
+# If you ignore the temperature dependence, there is more but maybe insignificant scatter
 points(jarvis_diffs$dVPD_norm,
        with(jarvis_diffs, dVPD_norm + dg_eff_norm + dg_eff * dVPD / (g_eff_hist * VPD_hist)),
        col = "grey30", pch = 3, cex = 0.8)
@@ -3228,6 +3324,15 @@ plot(jarvis_diffs$dET_predicted_norm,
 
 ################################################################################
 
+# First order
+dET_norm_first_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
+  # first order
+  FO <- dVPD_norm + dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
+  
+  FO
+}
+
+# Second order
 dET_norm_second_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
   # first order
   FO <- dVPD_norm + dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
@@ -3247,9 +3352,13 @@ dET_norm_second_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfV
   FO + SO
 }
 
+dETnorm_predicted_from_FO <- with(jarvis_diffs,
+                                  dET_norm_first_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
+
 dETnorm_predicted_from_SO <- with(jarvis_diffs,
                         dET_norm_second_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
 
+plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_FO)
 plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_SO)
 
 ################################################################################
@@ -3378,95 +3487,7 @@ jarvis_out |> select(VPD, ET_predicted, ET_no_recovered) |>
   # mutate(ET_test = ET_no_VPD - ET) |> 
   select(ET_predicted, ET_no_recovered) |> plot()
 
-fP_mean <- mean(jarvis_out$fP, na.rm = TRUE)
-fRg_mean <- mean(jarvis_out$fRg, na.rm = TRUE)
-fTa_mean <- mean(jarvis_out$fTa, na.rm = TRUE)
-fVPD_mean <- mean(jarvis_out$fVPD, na.rm = TRUE)
 
-plot(jarvis_out$VPD,
-     with(jarvis_out, ET))
-
-plot(jarvis_out$VPD,
-     with(jarvis_out, K_ET * fP * fRg * fTa * fVPD))
-
-plot(jarvis_out$VPD,
-     with(jarvis_out, K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD),
-     xlab = "VPD", ylab = "ET")
-
-# Predicted ET vs. observed
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
-                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_predicted_vs_VPD")
-
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
-                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_predicted_mean_fP_vs_VPD")
-
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE)), model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_predicted_mean_fVPD_vs_VPD")
-
-# VPD effect
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa_mean * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_VPD_effect_vs_VPD")
-
-# Precipitation effect
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP * fRg_mean * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_P_effect_vs_VPD")
-
-# Temperature effect
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_Ta_effect_vs_VPD")
-
-
-# Radiation effect
-make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP_mean * fRg * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
-                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
-                  save_ggplot2_obj_as="ET_Rg_effect_vs_VPD")
-
-
-print(ET_VPD_effect_vs_VPD)
-print(ET_P_effect_vs_VPD)
-print(ET_Ta_effect_vs_VPD)
-print(ET_Rg_effect_vs_VPD)
-
-# ET - VPD effect
-plot(jarvis_out$VPD,
-     with(jarvis_out, ET - K_ET * fP_mean * fRg_mean * fTa_mean * fVPD),
-     title = "VPD effect")
-
-################################################################################
 
 
 
