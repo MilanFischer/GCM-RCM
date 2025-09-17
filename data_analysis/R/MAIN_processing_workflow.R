@@ -3146,6 +3146,12 @@ fRg_mean <- mean(jarvis_out$fRg, na.rm = TRUE)
 fTa_mean <- mean(jarvis_out$fTa, na.rm = TRUE)
 fVPD_mean <- mean(jarvis_out$fVPD, na.rm = TRUE)
 
+plot(jarvis_out$g_eff,
+     jarvis_out$g_eff_predicted)
+
+plot(jarvis_out$ET,
+     jarvis_out$ET_predicted)
+
 plot(jarvis_out$VPD,
      with(jarvis_out, ET))
 
@@ -3231,10 +3237,6 @@ plot(jarvis_out$VPD,
 
 ################################################################################
 
-
-
-
-
 # helper: normalized difference
 .normdiff <- function(base, fut, var_name = "") {
   if (is.na(base) || is.na(fut)) return(NA_real_)
@@ -3271,9 +3273,6 @@ for (v in num_vars) {
 jarvis_diffs
 
 names(jarvis_diffs)
-
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dg_eff_norm) )
 
 # Full predicted normalized ET against VPD
 
@@ -3320,59 +3319,104 @@ points(jarvis_diffs$dVPD_norm,
 
 plot(jarvis_diffs$dET_predicted_norm,
      with(jarvis_diffs,
-          dVPD_norm + dg_eff_predicted_norm + dg_eff_predicted_norm * dVPD_norm) )
+          dVPD_norm + dg_eff_predicted_norm + dg_eff_predicted_norm * dVPD_norm))
+
+plot(jarvis_diffs$dET_predicted_norm,
+     with(jarvis_diffs,
+          dVPD_norm + dg_eff_predicted_norm + dg_eff_predicted_norm * dVPD_norm +
+            eT * dTa_norm +               # First order term
+            eT * dVPD_norm * dTa_norm +   # Second order term
+            eT * dg_eff_norm * dTa_norm + # Second order term
+            0.5 * pT * dTa_norm^2) )
 
 ################################################################################
+# Predicting the conductance and ET
 
 # First order
-dET_norm_first_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
+dg_eff_norm_first_order <- function(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
   # first order
-  FO <- dVPD_norm + dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
+  FO <- dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
   
   FO
 }
 
-# Second order
-dET_norm_second_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
+# Second order cross-terms
+dg_eff_norm_second_order <- function(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
   # first order
-  FO <- dVPD_norm + dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
+  FO <- dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
   
   # second-order cross terms (all pairwise products, no squares)
-  SO <- dVPD_norm*dfRg_norm +
-    dVPD_norm*dfTa_norm +
-    dVPD_norm*dfP_norm +
-    dVPD_norm*dfVPD_norm +
+  SO <- 
     dfRg_norm*dfTa_norm +
     dfRg_norm*dfP_norm +
     dfRg_norm*dfVPD_norm +
+    
     dfTa_norm*dfP_norm +
     dfTa_norm*dfVPD_norm +
+    
     dfP_norm*dfVPD_norm
   
   FO + SO
 }
 
-dETnorm_predicted_from_FO <- with(jarvis_diffs,
-                                  dET_norm_first_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
+dg_eff_norm_predicted_from_FO <- with(jarvis_diffs,
+                                      dg_eff_norm_first_order(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
 
-dETnorm_predicted_from_SO <- with(jarvis_diffs,
-                        dET_norm_second_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
+dg_eff_norm_predicted_from_SO <- with(jarvis_diffs,
+                                      dg_eff_norm_second_order(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
 
-plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_FO)
-plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_SO)
+plot(jarvis_diffs$dg_eff_predicted_norm, dg_eff_norm_predicted_from_FO)
+plot(jarvis_diffs$dg_eff_predicted_norm, dg_eff_norm_predicted_from_SO)
+
+# Exact match
+mean(jarvis_diffs$dg_eff_predicted_norm - dg_eff_norm_predicted_from_SO, na.rm = TRUE)
+
+plot(jarvis_diffs$dET_norm, jarvis_diffs$dVPD_norm + jarvis_diffs$dg_eff_norm + jarvis_diffs$dVPD_norm * jarvis_diffs$dg_eff_norm)
+plot(jarvis_diffs$dET_predicted_norm, jarvis_diffs$dVPD_norm + jarvis_diffs$dg_eff_predicted_norm + jarvis_diffs$dVPD_norm * jarvis_diffs$dg_eff_predicted_norm)
+
+plot(jarvis_diffs$dET_predicted_norm, jarvis_diffs$dVPD_norm + dg_eff_norm_predicted_from_SO + jarvis_diffs$dVPD_norm * dg_eff_norm_predicted_from_SO)
+
+dET_norm_third_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
+  # 1st + 2nd order
+  FO <- dVPD_norm + dfRg_norm + dfTa_norm + dfP_norm + dfVPD_norm
+  SO <- dVPD_norm*dfRg_norm + dVPD_norm*dfTa_norm + dVPD_norm*dfP_norm + dVPD_norm*dfVPD_norm +
+    dfRg_norm*dfTa_norm + dfRg_norm*dfP_norm + dfRg_norm*dfVPD_norm +
+    dfTa_norm*dfP_norm + dfTa_norm*dfVPD_norm +
+    dfP_norm*dfVPD_norm
+  
+  # 3rd order: all distinct triples (C(5,3) = 10)
+  TO <- dVPD_norm*dfRg_norm*dfTa_norm +
+    dVPD_norm*dfRg_norm*dfP_norm +
+    dVPD_norm*dfRg_norm*dfVPD_norm +
+    dVPD_norm*dfTa_norm*dfP_norm +
+    dVPD_norm*dfTa_norm*dfVPD_norm +
+    dVPD_norm*dfP_norm*dfVPD_norm +
+    dfRg_norm*dfTa_norm*dfP_norm +
+    dfRg_norm*dfTa_norm*dfVPD_norm +
+    dfRg_norm*dfP_norm*dfVPD_norm +
+    dfTa_norm*dfP_norm*dfVPD_norm
+  
+  FO + SO + TO
+}
+
+dET_norm_predicted_from_TO <- with(jarvis_diffs,
+                                   dET_norm_third_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
+
+plot(jarvis_diffs$dET_predicted_norm, dET_norm_predicted_from_TO)
+
 
 ################################################################################
 # Now remove fVPD
 
-dETnorm_predicted_from_SO_no_VPD <- with(jarvis_diffs,
-                                  dET_norm_second_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm,
+dETnorm_predicted_from_TO_no_VPD <- with(jarvis_diffs,
+                                  dET_norm_third_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm,
                                                          0 * dfVPD_norm))
 
 
-plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_SO_no_VPD)
+plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_TO_no_VPD)
 
 
-ET_future_no_fVPD <- dETnorm_predicted_from_SO_no_VPD *
+ET_future_no_fVPD <- dETnorm_predicted_from_TO_no_VPD *
   jarvis_diffs$ET_predicted_hist + jarvis_diffs$ET_predicted_hist
 
 plot(jarvis_diffs$ET_predicted_fut, ET_future_no_fVPD)
@@ -3403,105 +3447,12 @@ plot(test_data_sorted$ETo_FAO56_grass,
 lm(jarvis_diffs_sorted$ET_future_no_fVPD~test_data_sorted$ETo_FAO56_alfalfa - 1)
 lm(jarvis_diffs_sorted$ET_fut~test_data_sorted$ETo_FAO56_alfalfa - 1)
 
-
-plot(test_data_sorted$ETo_FAO56_alfalfa / test_data_sorted$P,
-     jarvis_diffs_sorted$ET_future_no_fVPD / test_data_sorted$P)
-
-
-
-
-
-
-
-plot(jarvis_diffs$dET_norm, jarvis_diffs$dET_predicted_norm)
-
-
-
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dET_predicted_norm) )
-
-
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dg_eff_norm + dg_eff * dVPD / (g_eff_hist * VPD_hist)) )
-
-
-# It works!
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dg_eff_predicted_norm) )
-
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dg_eff_predicted_norm +
-            dg_eff_predicted * dVPD / (g_eff_hist * VPD_hist) ) )
-
-
-# To simplify the most, use just this one, which depends on VPD!
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dfVPD_norm +
-            dfVPD * dVPD / (fVPD_hist * VPD_hist) ) )
-
-# This includes all Jarvis terms
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dg_eff_norm + dg_eff_predicted * dVPD / (g_eff_hist * VPD_hist) ) )
-
-# Doublecheck on P-ET relations
-plot(jarvis_diffs$dP_norm, jarvis_diffs$dET_predicted_norm)
-
-names(jarvis_diffs)
-
-
-
-
-
-plot(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dVPD_norm + dfVPD_norm + dg_eff_predicted * dVPD / (g_eff_hist * VPD_hist) ) )
-
-jarvis_diffs$g_eff_hist
-
-jarvis_diffs$dVPD_norm
-jarvis_diffs$dg_eff_norm
-
-
-plot(jarvis_diffs$dP_norm, jarvis_diffs$dET_norm)
-plot(jarvis_normdiff$d_fVPD)
-
-
-
-norm_diff <- annual_stats |>
-  group_by(VAR, ENSEMBLE, MODEL) |>
-  reframe(
-    d_annual_stat = if (VAR[1] == "Bo") {
-      (annual_stat[PERIOD == "2076_2100"] - annual_stat[PERIOD == "1981_2005"]) /
-        (1 + annual_stat[PERIOD == "1981_2005"])
-    } else {
-      (annual_stat[PERIOD == "2076_2100"] - annual_stat[PERIOD == "1981_2005"]) /
-        annual_stat[PERIOD == "1981_2005"]
-    }
-  )
-
-
-
-
-
-
-jarvis_out |> select(VPD, ET_predicted, ET_no_recovered) |> 
-  # mutate(ET_test = ET_no_VPD - ET) |> 
-  select(ET_predicted, ET_no_recovered) |> plot()
-
-
-
-
-
-
-
-
-
-
 # Predicted ET vs. VPD
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = jarvis_out |>
                     select(VPD, ET_predicted, model, color, fill, border, shape, label, linetype) |> 
                     rename(x = "VPD", y = "ET_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
+                  x_lab = bquote(VPD),  y_lab = bquote("ET"["predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
                   save_ggplot2_obj_as="ET_predicted_vs_VPD")
 
@@ -3514,7 +3465,7 @@ ggsave('../plots/ggplot2/ET_predicted_vs_VPD.png', plot = ET_predicted_vs_VPD, w
 ###############
 
 #---- Subplot labels
-plots <- list(p1 = p_AI_VPD_norm, p2 = p_EI_VPD_norm, p3 = p_geff_sqrt_VPD, p4 = p_ET_VPD)
+plots <- list(p1 = p_AI_VPD_norm, p2 = p_EI_VPD_norm, p3 = p_geff_sqrt_VPD_single_fit, p4 = p_ET_VPD)
 labels <- c("a)", "b)", "c)", "d)")
 
 plots <- Map(function(plot, label) {
@@ -3741,6 +3692,18 @@ make_scatter_plot(data = Data_to_plot_II |>
 # Save the plot
 ggsave('../plots/ggplot2/g_eff_resids_and_Rg.png', plot = g_eff_resids_relations, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+# Air temperature
+make_scatter_plot(data = Data_to_plot_II |>
+                    select(Ta, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    rename(x = "Ta", y = "g_eff_resids"),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(T[a]),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="g_eff_resids_relations")
+
+# Save the plot
+ggsave('../plots/ggplot2/g_eff_resids_and_Ta.png', plot = g_eff_resids_relations, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
 # Precipitation
 make_scatter_plot(data = Data_to_plot_II |>
                     select(P, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
@@ -3752,14 +3715,6 @@ make_scatter_plot(data = Data_to_plot_II |>
 
 # Save the plot
 ggsave('../plots/ggplot2/g_eff_resids_and_P.png', plot = g_eff_resids_relations, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
-Data_to_plot_II
-Data_to_plot
-names(Data_to_plot_II)
-names(Data_to_plot)
-
-
-names(Data_to_plot_III)
 
 #---------------
 # Merging tibles
@@ -3836,8 +3791,6 @@ make_scatter_plot(data = merged_df |>
 
 # Save the plot
 ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_d_AI_over_AI.png', plot = d_g_eff_ref_g_eff_ref_vs_d_AI_over_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
-
 
 #---------------------------------------
 # Normalized precipitation and g_eff_ref
@@ -3952,15 +3905,7 @@ make_scatter_plot(data = merged_df |>
 ggsave('../plots/ggplot2/d_P_over_P_vs_Rg_over_Rg.png', plot = d_P_over_P_vs_Rg_over_Rg, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 ############
-# EI vs. EI
-Data_to_plot_II <- Data_to_plot_II |> 
-  mutate(EI_predicted = )
-
-Data_to_plot_II |> names()
-
-
-
-
+# EI vs. VPD
 make_scatter_plot(data = Data_to_plot_II |>
                     select(VPD, EI, model, color, fill, border, shape, label, linetype) |> 
                     rename(x = "VPD", y = "EI"),
@@ -4033,143 +3978,6 @@ ggsave('../plots/ggplot2/EI_vs_VPD_ggplot2_TIDY.png', plot = p_EI_VPD, width = P
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-tmp <- Data_to_plot_II |>
-  select(VPD, EI, model, color, fill, border, shape, label, linetype)
-
-arrow_data <- tmp |>
-  pivot_wider(names_from = PERIOD, values_from = c(PET_over_P, ET_over_P)) |>
-  mutate(
-    x = VPD,
-    y = ET_over_P_1981_2005,
-    xend = PET_over_P_2076_2100,
-    yend = ET_over_P_2076_2100,
-    Scenario = ENSEMBLE,
-    Color = case_when(
-      Scenario == "CMIP5" ~ COL_CMIP5,
-      Scenario == "CMIP6" ~ COL_CMIP6,
-      Scenario == "RCMs"  ~ COL_RCMs
-    ),
-    arrow_type = if_else(
-      Scenario == "RCMs" | MODEL %in% driving_GCMs,
-      "thick", "thin"
-    ),
-    line_size = if_else(arrow_type == "thick", 0.6, 0.2)
-  ) |>
-  select(x, y, xend, yend, Scenario, Color, Model = MODEL, arrow_type, line_size)
-
-
-
-
-
-
-
-p <- ggplot() +
-  
-  # Add continuous boundary line from (0,0) to (1,1) and then horizontally at y = 1
-  geom_line(data = boundary_line, aes(x = x, y = y),
-            color = boundary_line_col,
-            linetype = boundary_line_type,
-            size = boundary_line_size , na.rm = TRUE) +
-  
-  # Add continuous Budyko curves
-  geom_line(data = lines_data, aes(x = X, y = Y, group = Scenario, color = Scenario, linetype = LineType), na.rm = TRUE) +
-  
-  # Add arrows
-  geom_segment(data = arrow_data_thin, aes(x = x, y = y, xend = xend, yend = yend, color = Scenario, size = line_size),
-               arrow = arrow(type = "closed", length = unit(0.03, "inches")), lineend = "round") +
-  geom_segment(data = arrow_data_thick, aes(x = x, y = y, xend = xend, yend = yend, color = Scenario, size = line_size),
-               arrow = arrow(type = "closed", length = unit(0.09, "inches")), lineend = "round") +
-  scale_color_manual(values = c(
-    "CMIP5_1981_2005" = COL_CMIP5, "CMIP6_1981_2005" = COL_CMIP6, "RCMs_1981_2005" = COL_RCMs,
-    "CMIP5_2076_2100" = COL_CMIP5, "CMIP6_2076_2100" = COL_CMIP6, "RCMs_2076_2100" = COL_RCMs,
-    "RCMs" = COL_RCMs, "CMIP5" = COL_CMIP5, "CMIP6" = COL_CMIP6
-  )) +
-  scale_linetype_manual(values = c("solid" = "solid", "dashed" = "dashed")) +
-  scale_size_continuous(range = c(0.2, 0.6)) +
-  labs(x = expression("AI = PET/P"), y = expression("EI = ET/P")) +
-  scale_x_continuous(limits = X_range, expand = c(0, 0)) +
-  scale_y_continuous(limits = Y_range, expand = c(0, 0)) +
-  theme_bw() +
-  theme(panel.grid = element_blank(), legend.position = "none")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-################################################################################
-
 ################################################################################
 
 # With normalized VPD
@@ -4232,15 +4040,6 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_AI_CO2_corr_over_AI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_AI_CO2corr_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 
-
-
-
-
-
-
-
-
-
 Data_to_plot <- Data_to_plot |>
   mutate(dET_to_PET_ratio_over_ET_to_PET_ratio = (d_ET_over_ET - d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa) / 
            (1 + d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa))
@@ -4255,8 +4054,6 @@ make_scatter_plot(data = Data_to_plot |>
                   save_ggplot2_obj_as="p_ET_over_PET_VPD_norm")
 # Save the plot
 ggsave('../plots/ggplot2/delta_ET_to_PET_ratio_over_ET_to_PET_ratio_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_ET_over_PET_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
-
 
 
 make_scatter_plot(data = Data_to_plot |>
@@ -4335,7 +4132,6 @@ make_scatter_plot(data = Data_to_plot |>
 # Save the plot
 ggsave('../plots/ggplot2/ET_vs_VPD_historical_ggplot2_TIDY.png', plot = p_ET_VPD_historical, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-
 make_scatter_plot(data = Data_to_plot |>
                     select(VPD, P, model, color, fill, border, shape, label, linetype) |> 
                     rename(x = "VPD", y = "P"),
@@ -4374,11 +4170,3 @@ make_scatter_plot(data = Data_to_plot |>
                   save_ggplot2_obj_as="p_P_VPD_RCP")
 # Save the plot
 ggsave('../plots/ggplot2/P_vs_VPD_RCP_ggplot2_TIDY.png', plot = p_P_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
-
-
-Data_to_plot <- Data_to_plot |>
-  mutate(dAI_over_AI = (d_ET_over_ET - d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa) / 
-           (1 + d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa))
-
-
