@@ -9,7 +9,7 @@ make_scatter_plot <- function(data,
                               x_lab = "x_lab", y_lab = "y_lab", one_to_one_line = FALSE, one_to_one_line_lab = FALSE,
                               vline = TRUE, hline = TRUE, robust_regression = FALSE,
                               LM_eq_labels = FALSE, plot_labels = FALSE,
-                              plot_path = "./", plot_name = "test.png", save_ggplot2_obj_as = FALSE) {
+                              plot_path = "./", plot_name = FALSE, save_ggplot2_obj_as = FALSE) {
   
   # Get the model variants
   models <- unique(data$model)
