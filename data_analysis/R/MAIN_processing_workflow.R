@@ -152,6 +152,10 @@ Data <- Data |>
     values_to = "VALUE"                      # New column for corresponding values
   )
 
+# Make ERA5 as independent ensemble
+Data <- Data |>
+  mutate(ENSEMBLE = if_else(MODEL == "ERA5", "ERA5", ENSEMBLE))
+
 # Function for gapfilling of u and RH
 gap_fill_tidy <- function(data, var, period) {
   data |>
@@ -159,7 +163,8 @@ gap_fill_tidy <- function(data, var, period) {
     mutate(
       VALUE = if_else(
         VAR == var & PERIOD == period & is.na(VALUE),
-        mean(VALUE[VAR == var & PERIOD == period & MODEL != "ERA5"], na.rm = TRUE),
+        # mean(VALUE[VAR == var & PERIOD == period & MODEL != "ERA5"], na.rm = TRUE),
+        mean(VALUE[VAR == var & PERIOD == period], na.rm = TRUE),
         VALUE
       )
     ) |>
@@ -215,6 +220,10 @@ Data <- Data |>
 Data <- Data |> 
   filter(!is.na(VAR))
 
+# Remove the duplicates
+Data <- Data |> 
+  distinct(MONTH, VAR, PERIOD, ENSEMBLE, MODEL, .keep_all = TRUE)
+
 # Pivot data to a wider format to facilitate calculations across variables
 Data_wide <- Data |> 
   pivot_wider(names_from = VAR, values_from = VALUE) |> 
@@ -241,6 +250,20 @@ Data_wide <- Data |>
     # Runoff
     RO = P - ET
   )
+
+vpd_mean_by_ensemble <- Data_wide |> 
+  filter(PERIOD == "1981_2005") |> 
+  group_by(ENSEMBLE) |> 
+  summarise(mean_VPD = mean(VPD, na.rm = TRUE), .groups = "drop")
+
+vpd_mean_by_ensemble
+
+# Now drop ERA5
+Data <- Data |> 
+  filter(ENSEMBLE != "ERA5")
+
+Data_wide <- Data_wide |> 
+  filter(ENSEMBLE != "ERA5")
 
 # --- helper to fit slope-only lm(y ~ x - 1) per ENSEMBLE using lm ---
 fit_slope_per_ensemble <- function(df, x, y, slope_name) {
@@ -3329,6 +3352,23 @@ plot(jarvis_diffs$dET_predicted_norm,
             eT * dg_eff_norm * dTa_norm + # Second order term
             0.5 * pT * dTa_norm^2) )
 
+
+
+# Emergent constraint
+plot(jarvis_diffs$VPD_hist, jarvis_diffs$VPD_fut)
+plot(jarvis_diffs$VPD_hist, (jarvis_diffs$VPD_fut - jarvis_diffs$VPD_hist))
+plot(jarvis_diffs$VPD_hist, (jarvis_diffs$VPD_fut - jarvis_diffs$VPD_hist) / jarvis_diffs$VPD_hist)
+
+plot(jarvis_diffs$VPD_hist, jarvis_diffs$P_fut)
+plot(jarvis_diffs$VPD_hist, jarvis_diffs$g_eff_fut)
+plot(jarvis_diffs$VPD_hist, (jarvis_diffs$g_eff_fut - jarvis_diffs$g_eff_hist) / jarvis_diffs$g_eff_hist)
+plot(jarvis_diffs$VPD_hist, jarvis_diffs$ET_fut)
+
+
+plot(jarvis_diffs$Ta_hist, jarvis_diffs$Ta_fut)
+plot(jarvis_diffs$P_hist, jarvis_diffs$P_fut)
+plot(jarvis_diffs$ET_hist, jarvis_diffs$ET_fut)
+
 ################################################################################
 # Predicting the conductance and ET
 
@@ -3406,12 +3446,62 @@ plot(jarvis_diffs$dET_predicted_norm, dET_norm_predicted_from_TO)
 
 
 ################################################################################
+# Now remove the modifiers
+jarvis_diffs <- jarvis_diffs |>
+  arrange(model, label)
+
+jarvis_diffs <- jarvis_diffs |>
+  mutate(dETnorm_predicted_from_TO = dET_norm_third_order(1*dVPD_norm, 1*dfRg_norm, 1*dfTa_norm, 1*dfP_norm, 1*dfVPD_norm)) |> 
+  mutate(ET_fut_predicted_from_TO = dETnorm_predicted_from_TO * ET_predicted_hist + ET_predicted_hist) |> 
+  mutate(ET_fut_predicted_from_TO_and_hist = dETnorm_predicted_from_TO * ET_hist + ET_hist)
+
+plot(jarvis_diffs$ET_predicted_fut, jarvis_diffs$ET_fut_predicted_from_TO)
+plot(jarvis_diffs$ET_predicted_fut, jarvis_diffs$ET_fut_predicted_from_TO_and_hist)
+
+part_1 <- jarvis_diffs |> 
+  select(
+    model, label,
+    ET_predicted_from_TO_and_hist = ET_hist,
+    P = P_hist
+  ) |> 
+  mutate(PERIOD = "1981_2005")
+
+part_2 <- jarvis_diffs |> 
+  select(
+    model, label,
+    ET_predicted_from_TO_and_hist = ET_fut_predicted_from_TO_and_hist,
+    P = P_fut
+  ) |> 
+  mutate(PERIOD = "2076_2100")
+
+merged <- bind_rows(part_1, part_2)
+
+# normalize keys (trim spaces) on both sides, keep only needed column from Data_to_plot_II
+dtp_join <- Data_to_plot_II |> 
+  mutate(across(c(PERIOD, model, label), ~ str_squish(as.character(.)))) |> 
+  select(PERIOD, model, label, ETo_FAO56_alfalfa) |> 
+  distinct()
+
+merged <- merged |> 
+  mutate(across(c(PERIOD, model, label), ~ str_squish(as.character(.)))) |> 
+  left_join(dtp_join, by = c("PERIOD", "model", "label")) |> 
+  mutate(ENSEMBLE = model, MODEL = label)
+
+
+out_BC_FAO56_alfalfa_ET_semipredicted <- Budyko_curve(merged,
+                                                  pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted_from_TO_and_hist", p_col = "P",
+                                                  X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
+                                                  Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
+                                                  boundary_line_col = "gray45",
+                                                  boundary_line_type = "solid",
+                                                  boundary_line_size = 0.2,
+                                                  plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ET_semipredicted_ggplot2.png")
+
+################################################################################
 # Now remove fVPD
-
 dETnorm_predicted_from_TO_no_VPD <- with(jarvis_diffs,
-                                  dET_norm_third_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm,
-                                                         0 * dfVPD_norm))
-
+                                         dET_norm_third_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm,
+                                                              0 * dfVPD_norm))
 
 plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_TO_no_VPD)
 
@@ -3447,6 +3537,9 @@ plot(test_data_sorted$ETo_FAO56_grass,
 lm(jarvis_diffs_sorted$ET_future_no_fVPD~test_data_sorted$ETo_FAO56_alfalfa - 1)
 lm(jarvis_diffs_sorted$ET_fut~test_data_sorted$ETo_FAO56_alfalfa - 1)
 
+plot(test_data_sorted$ETo_FAO56_alfalfa / test_data_sorted$P,
+     jarvis_diffs_sorted$ET_future_no_fVPD / test_data_sorted$P)
+
 # Predicted ET vs. VPD
 make_scatter_plot(data = jarvis_out |>
                     select(VPD, ET_predicted, model, color, fill, border, shape, label, linetype) |> 
@@ -3459,6 +3552,31 @@ make_scatter_plot(data = jarvis_out |>
 # Save the plot
 ggsave('../plots/ggplot2/ET_predicted_vs_VPD.png', plot = ET_predicted_vs_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+
+# 1) Keep just the keys + required variables from each table
+part_1 <- annual_stats_wide |> 
+  select(PERIOD, ENSEMBLE, MODEL, ETo_FAO56_alfalfa = ETo_FAO56_alfalfa, ET = ET, P = P)
+
+part_2 <- jarvis_out |> 
+  select(PERIOD, model, label, ET_predicted = ET_predicted, ET = ET, P = P)
+
+# 2) Inner-join on the matching keys:
+part_join <- part_1 |> 
+  inner_join(part_2,
+             by = c("PERIOD" = "PERIOD",
+                    "ENSEMBLE" = "model",
+                    "MODEL"    = "label"))
+
+View(part_join)
+
+out_BC_FAO56_alfalfa_ET_predicted <- Budyko_curve(part_join,
+                                     pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted", p_col = "P.x",
+                                     X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
+                                     Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
+                                     boundary_line_col = "gray45",
+                                     boundary_line_type = "solid",
+                                     boundary_line_size = 0.2,
+                                     plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ET_predicted_ggplot2.png")
 
 ###############
 # Combined plot
@@ -3975,8 +4093,6 @@ if (length(idx_pts_txt)) {
 
 # Save the plot
 ggsave('../plots/ggplot2/EI_vs_VPD_ggplot2_TIDY.png', plot = p_EI_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
-
 
 ################################################################################
 
