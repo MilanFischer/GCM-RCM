@@ -4310,6 +4310,20 @@ ggsave('../plots/ggplot2/EI_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_EI_EI_RCP
 make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
+                                      vars = c("EI", "VPD"),
+                                      by   = c("model","label")) |>
+                    mutate(x = VPD_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_VPD_EI_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_VPD_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
                                       vars = c("AI_FAO56_alfalfa"),
                                       by   = c("model","label")) |>
                     mutate(x = AI_FAO56_alfalfa_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
@@ -4324,12 +4338,88 @@ ggsave('../plots/ggplot2/AI_hist_vs_AI_RCP_ggplot2_TIDY.png', plot = p_AI_AI_RCP
 make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa"),
+                                      by   = c("model","label")) |>
+                    mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = ET_fut/ ETo_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("ET/PET"["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_hist_ET2PET_fut")
+
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_ET2PET_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_ET2PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ETo_FAO56_alfalfa"),
+                                      by   = c("model","label")) |>
+                    mutate(x = ETo_FAO56_alfalfa_hist, y = ETo_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote("PET"["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_PET_hist_PET_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/PET_hist_vs_PET_RCP_ggplot2_TIDY.png', plot = p_PET_hist_PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ETo_FAO56_alfalfa"),
+                                      by   = c("model","label")) |>
+                    mutate(x = ETo_FAO56_alfalfa_hist, y = (ETo_FAO56_alfalfa_fut - ETo_FAO56_alfalfa_hist) / ETo_FAO56_alfalfa_hist, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(Delta*'PET/'*'PET'),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_PET_hist_delta_PET")
+
+# Save the plot
+ggsave('../plots/ggplot2/PET_hist_vs_delta_PET_ggplot2_TIDY.png', plot = p_PET_hist_delta_PET, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("P"),
+                                      by   = c("model","label")) |>
+                    mutate(x = P_hist, y = (P_fut - P_hist) / P_hist, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("P"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(Delta*'P/'*'P'),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_P_hist_delta_P")
+
+# Save the plot
+ggsave('../plots/ggplot2/P_hist_vs_delta_P_ggplot2_TIDY.png', plot = p_P_hist_delta_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "P"),
+                                      by   = c("model","label")) |>
+                    mutate(x = VPD_hist, y = (P_fut - P_hist) / P_hist, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("VPD"["1981–2005"]~"(kPa)"),  y_lab = bquote(Delta*'P/'*'P'),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_VPD_hist_delta_P")
+
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_delta_P_ggplot2_TIDY.png', plot = p_VPD_hist_delta_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
                                       vars = c("ET"),
                                       by   = c("model","label")) |>
                     mutate(x = ET_hist, y = ET_fut, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(ET["1981–2005"]),  y_lab = bquote(ET["2076–2100"]),
+                  x_lab = bquote(ET["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(ET["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_ET_ET_RCP")
 # Save the plot
@@ -4343,7 +4433,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = P_hist, y = P_fut, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(P["1981–2005"]),  y_lab = bquote(P["2076–2100"]),
+                  x_lab = bquote(P["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(P["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_P_P_RCP")
 # Save the plot
@@ -4357,11 +4447,53 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = VPD_hist, y = VPD_fut, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(VPD["1981–2005"]),  y_lab = bquote(VPD["2076–2100"]),
+                  x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(VPD["2076–2100"]~(kPa)),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_VPD_VPD_RCP")
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_VPD_RCP_ggplot2_TIDY.png', plot = p_VPD_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "ET"),
+                                      by   = c("model","label")) |>
+                    mutate(x = VPD_hist, y = ET_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(ET["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_VPD_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_ET_RCP_ggplot2_TIDY.png', plot = p_ET_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "AI_FAO56_alfalfa"),
+                                      by   = c("model","label")) |>
+                    mutate(x = VPD_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(AI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_AI_VPD_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_AI_RCP_ggplot2_TIDY.png', plot = p_AI_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "P"),
+                                      by   = c("model","label")) |>
+                    mutate(x = VPD_hist, y = P_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(P["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_P_VPD_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_P_RCP_ggplot2_TIDY.png', plot = p_P_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
@@ -4371,11 +4503,25 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = g_eff_hist, y = g_eff_fut, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(geff["1981–2005"]),  y_lab = bquote(geff["2076–2100"]),
+                  x_lab = bquote(g["eff 1981–2005"]~"(mm s"^"-1"*")"),  y_lab = bquote(g["eff 2076–2100"]~"(mm s"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_g_eff_g_eff_RCP")
 # Save the plot
 ggsave('../plots/ggplot2/g_eff_hist_vs_g_eff_RCP_ggplot2_TIDY.png', plot = p_g_eff_g_eff_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "g_eff"),
+                                      by   = c("model","label")) |>
+                    mutate(x = VPD_hist, y = g_eff_fut, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(g["eff 2076–2100"]~"(mm s"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_VPD_g_eff_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_g_eff_RCP_ggplot2_TIDY.png', plot = p_VPD_g_eff_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
@@ -4385,7 +4531,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = Ta_hist, y = Ta_fut, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(Ta["1981–2005"]),  y_lab = bquote(Ta["2076–2100"]),
+                  x_lab = bquote(T["a 1981–2005"]~"(°C)"),  y_lab = bquote(T["a 2076–2100"]~"(°C)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_Ta_Ta_RCP")
 # Save the plot
@@ -4399,7 +4545,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = RH_hist, y = RH_fut, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  x_lab = bquote(RH["1981–2005"]),  y_lab = bquote(RH["2076–2100"]),
+                  x_lab = bquote(RH["1981–2005"]~"(%)"),  y_lab = bquote(RH["2076–2100"]~"(%)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_RH_RH_RCP")
 # Save the plot
