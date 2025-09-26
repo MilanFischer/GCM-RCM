@@ -7,7 +7,7 @@ robust_rlm <- function(formula, data, ...) {
 make_scatter_plot <- function(data,
                               FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, X_range_man = FALSE, Y_range_man = FALSE,
                               x_lab = "x_lab", y_lab = "y_lab", one_to_one_line = FALSE, one_to_one_line_lab = FALSE,
-                              vline = TRUE, hline = TRUE, robust_regression = FALSE,
+                              vline = TRUE, hline = TRUE, robust_regression = FALSE, force_origin = FALSE,
                               LM_eq_labels = FALSE, plot_labels = FALSE,
                               plot_path = "./", plot_name = FALSE, save_ggplot2_obj_as = FALSE) {
   
@@ -31,7 +31,12 @@ make_scatter_plot <- function(data,
       XY <- subset(data, model == models[i], select = c(x, y))
       
       # Calculate fits
-      fits[[i]] <- lin_reg(XY$y ~ XY$x)
+      if(force_origin == TRUE){
+        fits[[i]] <- lin_reg(XY$y ~ XY$x -1)
+      }else{
+        fits[[i]] <- lin_reg(XY$y ~ XY$x)
+      }
+      
     }
   }
   
@@ -62,7 +67,9 @@ make_scatter_plot <- function(data,
       
       # Add a regression line for the current subset
       p <- p + geom_smooth(
-        method = lin_reg, formula = y ~ x, data = df,
+        method = lin_reg,
+        formula = if (isTRUE(force_origin)) y ~ x -1 else y ~ x,
+        data = df,
         aes(x = x, y = y, color = color, fill = color, linetype = linetype),
         se = TRUE
       )
@@ -73,12 +80,21 @@ make_scatter_plot <- function(data,
         x_label_pos <- LM_eq_labels$x[i]
         y_label_pos <- LM_eq_labels$y[i]
         
+        # Compute the label text first
+        label_text <- if (isTRUE(force_origin)) {
+          slope <- unname(coef(fits[[i]])[1])   # only one coef in y ~ 0 + x
+          LM_equation(slope = slope, intercept = 0)
+        } else {
+          b <- coef(fits[[i]])                  # intercept first, slope second
+          LM_equation(slope = unname(b[2]), intercept = unname(b[1]))
+        }
+        
         # Ensure x and y are numeric before rescaling
         if (is.numeric(x_label_pos) && is.numeric(y_label_pos)) {
           p <- p + annotate("text",
                             x = rescale(x_label_pos, X_range),
                             y = rescale(y_label_pos, Y_range),
-                            label = LM_equation(slope = coef(fits[[i]])[2], intercept = coef(fits[[i]])[1]),
+                            label = label_text,
                             hjust = 0,
                             color = df$color[1])
         } else {

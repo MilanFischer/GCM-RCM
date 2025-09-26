@@ -25,8 +25,8 @@ library(tidyverse)
 # Preprocess
 source("./src/general_functions.R")
 source("./src/make_plot_tidy.R")
-source("./src/resize_plot_elements.R")
 source("./src/colors.R")
+source("./src/resize_plot_elements.R")
 source("./src/Budyko_curve_tidy.R")
 source("./src/pair_periods.R")
 
@@ -4290,9 +4290,6 @@ plot(jarvis_diffs$Ta_hist, jarvis_diffs$Ta_fut)
 plot(jarvis_diffs$P_hist, jarvis_diffs$P_fut)
 plot(jarvis_diffs$ET_hist, jarvis_diffs$ET_fut)
 
-
-
-
 make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
@@ -4550,3 +4547,78 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                   save_ggplot2_obj_as="p_RH_RH_RCP")
 # Save the plot
 ggsave('../plots/ggplot2/RH_hist_vs_RH_RCP_ggplot2_TIDY.png', plot = p_RH_RH_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# Test log(VPD_fut/VPD_hist) vs Delta Ta
+
+LM_eq_labels <- tibble(
+  x = rep(0.03, 6),
+  y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
+)
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "Ta"),
+                                      by   = c("model","label")) |>
+                    mutate(x = Ta_fut - Ta_hist, y = log(VPD_fut / VPD_hist), model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  LM_eq_labels = LM_eq_labels, force_origin = TRUE,
+                  x_lab = bquote(Delta*T["a"]~"(°C)"),  y_lab = bquote("ln(VPD/VPD)"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_log_VPD_fut_VPD_hist_delta_Ta")
+# Save the plot
+ggsave('../plots/ggplot2/log_VPD_fut_VPD_hist_delta_Ta_ggplot2_TIDY.png', plot = p_log_VPD_fut_VPD_hist_delta_Ta, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+LM_eq_labels <- tibble(
+  x = rep(0.03, 6),
+  y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
+)
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "Ta"),
+                                      by   = c("model","label")) |>
+                    mutate(x = Ta_fut - Ta_hist, y = (VPD_fut - VPD_hist) / VPD_hist, model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  LM_eq_labels = LM_eq_labels, force_origin = TRUE,
+                  x_lab = bquote(Delta*T["a"]~"(°C)"),  y_lab = bquote(Delta*"VPD / VPD"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_delta_VPD_norm_delta_Ta")
+# Save the plot
+ggsave('../plots/ggplot2/delta_VPD_norm_delta_Ta_ggplot2_TIDY.png', plot = p_delta_VPD_norm_delta_Ta, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+################################################################################
+# Complementary relations
+make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa"),
+                                      by   = c("model","label")) |>
+                    mutate(x = ET_hist + ETo_FAO56_alfalfa_hist, y = ET_fut + ETo_FAO56_alfalfa_fut , model = interaction(model, drop = TRUE)) |>
+                    select(model, label, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET + PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote("ET + PET"["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_PET_hist_ET_PET_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/p_ET_PET_hist_vs_ET_PET_fut_ggplot2_TIDY.png', plot = p_ET_PET_hist_ET_PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+LM_eq_labels <- tibble(
+  x = rep(0.03, 6),
+  y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
+)
+
+make_scatter_plot(data = Data_to_plot |>
+                    select(d_Ta, d_VPD_over_VPD, model, color, fill, border, shape, label, linetype) |> 
+                    rename(x = "d_Ta", y = "d_VPD_over_VPD"),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  LM_eq_labels = LM_eq_labels,
+                  x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'VPD/'*'VPD'),
+                  hline = FALSE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  plot_labels = Plot_labels,
+                  save_ggplot2_obj_as="p3")
