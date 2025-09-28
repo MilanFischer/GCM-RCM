@@ -3,6 +3,28 @@ robust_rlm <- function(formula, data, ...) {
   rlm(formula, data = data, ...)
 }
 
+LM_equation <- function(slope, intercept = NULL, digits = 2, zero_tol = 1e-8) {
+  s0 <- is.na(slope) || is.null(slope) || abs(slope) < zero_tol
+  i0 <- is.null(intercept) || is.na(intercept) || abs(intercept) < zero_tol
+  
+  s <- formatC(slope, format = "f", digits = digits)
+  # If slope ~ 0, just show the intercept (or 0)
+  if (s0) {
+    if (i0) return("y = 0")
+    i <- formatC(intercept, format = "f", digits = digits)
+    return(paste0("y = ", i))
+  }
+  
+  if (i0) {
+    # no intercept term shown
+    return(paste0("y = ", s, "x"))
+  } else {
+    i_abs <- formatC(abs(intercept), format = "f", digits = digits)
+    sign  <- if (intercept >= 0) " + " else " - "
+    return(paste0("y = ", s, "x", sign, i_abs))
+  }
+}
+
 # Define custom function for scatter plots
 make_scatter_plot <- function(data,
                               FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, X_range_man = FALSE, Y_range_man = FALSE,
@@ -68,7 +90,7 @@ make_scatter_plot <- function(data,
       # Add a regression line for the current subset
       p <- p + geom_smooth(
         method = lin_reg,
-        formula = if (isTRUE(force_origin)) y ~ x -1 else y ~ x,
+        formula = (if (isTRUE(force_origin)) (y ~ x - 1) else (y ~ x)),
         data = df,
         aes(x = x, y = y, color = color, fill = color, linetype = linetype),
         se = TRUE
@@ -82,10 +104,10 @@ make_scatter_plot <- function(data,
         
         # Compute the label text first
         label_text <- if (isTRUE(force_origin)) {
-          slope <- unname(coef(fits[[i]])[1])   # only one coef in y ~ 0 + x
-          LM_equation(slope = slope, intercept = 0)
+          slope <- unname(coef(fits[[i]])[1])
+          LM_equation(slope = slope, intercept = 0)  # prints "y = ax" (no + 0)
         } else {
-          b <- coef(fits[[i]])                  # intercept first, slope second
+          b <- coef(fits[[i]])
           LM_equation(slope = unname(b[2]), intercept = unname(b[1]))
         }
         

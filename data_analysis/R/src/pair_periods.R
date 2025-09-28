@@ -16,7 +16,7 @@ pair_periods <- function(df,
       across(any_of(keep), ~ dplyr::first(na.omit(.x))),
       .groups = "drop"
     ) |>
-    rename_with(~ paste0(.x, "_hist"), all_of(vars))    # only metrics get _hist
+    rename_with(~ paste0(.x, "_hist"), all_of(vars))    # Only metrics get _hist
   
   fut_tbl <- df |>
     filter(PERIOD == fut) |>
@@ -25,8 +25,8 @@ pair_periods <- function(df,
       across(all_of(vars), agg),
       .groups = "drop"
     ) |>
-    rename_with(~ paste0(.x, "_fut"), all_of(vars)) |>  # only metrics get _fut
-    select(all_of(by), ends_with("_fut"))               # DROP styling cols here
+    rename_with(~ paste0(.x, "_fut"), all_of(vars)) |>  # Only metrics get _fut
+    select(all_of(by), ends_with("_fut"))               # Drop styling cols here
   
   inner_join(hist_tbl, fut_tbl, by = by)
 }

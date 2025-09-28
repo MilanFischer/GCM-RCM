@@ -4569,7 +4569,6 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/log_VPD_fut_VPD_hist_delta_Ta_ggplot2_TIDY.png', plot = p_log_VPD_fut_VPD_hist_delta_Ta, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-
 LM_eq_labels <- tibble(
   x = rep(0.03, 6),
   y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
@@ -4582,13 +4581,12 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = Ta_fut - Ta_hist, y = (VPD_fut - VPD_hist) / VPD_hist, model = interaction(model, drop = TRUE)) |>
                     select(model, label, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  LM_eq_labels = LM_eq_labels, force_origin = TRUE,
+                  LM_eq_labels = LM_eq_labels, force_origin = FALSE,
                   x_lab = bquote(Delta*T["a"]~"(°C)"),  y_lab = bquote(Delta*"VPD / VPD"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_delta_VPD_norm_delta_Ta")
 # Save the plot
 ggsave('../plots/ggplot2/delta_VPD_norm_delta_Ta_ggplot2_TIDY.png', plot = p_delta_VPD_norm_delta_Ta, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
 
 ################################################################################
 # Complementary relations
