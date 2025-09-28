@@ -533,7 +533,7 @@ ggsave(filename = "../plots/ggplot2/FAO_ET_ggplot2_TIDY.png", plot = p, width = 
 
 annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> pull(ET_diff) |> plot()
 annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> pull(ET_diff) |> min()
-annual_stats_wide |>  mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> filter(ET_diff < 0)
+annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> filter(ET_diff < 0)
 
 
 # Calculate the normalized difference between periods
@@ -590,8 +590,7 @@ Data_to_plot <- all_diff |>
     shape = 21,
     linetype = "solid"
   ) |>
-  rename(model = ENSEMBLE, label = MODEL)
-
+  rename(ensemble = ENSEMBLE, model = MODEL)
 
 # --------------
 # Start plotting
@@ -601,7 +600,7 @@ Data_to_plot <- all_diff |>
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.88, 0.83, 0.78),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
@@ -611,7 +610,7 @@ LM_eq_labels <- tibble(
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_ET_over_ET, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_ET_over_ET, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_ET_over_ET", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'ET/'*'ET'),  y_lab = bquote(Delta*'P/'*'P'),
@@ -627,7 +626,7 @@ LM_eq_labels <- data.frame(
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_ET_over_ET, d_RO_over_RO, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_ET_over_ET, d_RO_over_RO, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_ET_over_ET", y = "d_RO_over_RO"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'ET/'*'ET'),  y_lab = bquote(Delta*'R'[o]*'/'*'R'[o]),
@@ -643,7 +642,7 @@ LM_eq_labels <- tibble(
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_P_over_P, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_P_over_P, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_P_over_P", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'P/'*'P'),  y_lab = bquote(Delta*'ET/'*'ET'),
@@ -654,7 +653,7 @@ make_scatter_plot(data = Data_to_plot |>
 #----------------
 # dET/ET vs. dRO/RO
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_P_over_P, d_RO_over_RO, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_P_over_P, d_RO_over_RO, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_P_over_P", y = "d_RO_over_RO"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'P/'*'P'),  y_lab = bquote(Delta*'R'[o]*'/'*'R'[o]),
@@ -770,7 +769,7 @@ ggsave('../plots/ggplot2/panel_fig_hydrological_relations_TIDY.png', plot = pane
 Plot_labels <- tibble(
   x = c(0.84, 0.84, 0.84),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
@@ -778,7 +777,7 @@ Plot_labels <- tibble(
 Y_range_man <- c(-0.12, 0.32)
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'P/'*'P'),
@@ -851,7 +850,7 @@ ggsave('../plots/ggplot2/delta_P_over_P_vs_Ta_ggplot2_TIDY.png', plot = p1, widt
 # Delta_T versus delta_ET/ET
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'ET/'*'ET'),
@@ -871,12 +870,12 @@ ggsave('../plots/ggplot2/delta_ET_over_ET_vs_Ta_ggplot2_TIDY.png', plot = p2, wi
 Plot_labels <- tibble(
   x = c(0.04, 0.04, 0.04),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_VPD_over_VPD, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_VPD_over_VPD, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_VPD_over_VPD"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'VPD/'*'VPD'),
@@ -942,22 +941,22 @@ g_eff_corr_RCMs <- annual_stats_wide |>
 
 # Original CMIP5, CMIP6, and EUR-44 points
 points_base <- Data_to_plot |>
-  select(d_Ta, d_g_eff_over_g_eff, model, color, fill, border, shape, label, linetype) |>
+  select(d_Ta, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |>
   rename(x = d_Ta, y = d_g_eff_over_g_eff)
 
 # CO2-corrected EUR-44 points
 points_corr <- Data_to_plot |>
-  filter(model == "EUR-44") |>
-  left_join(g_eff_corr_RCMs, by = c("label" = "MODEL")) |>
+  filter(ensemble == "EUR-44") |>
+  left_join(g_eff_corr_RCMs, by = c("model" = "MODEL")) |>
   mutate(
-    model = "EUR-44_CO2_corr",
+    ensemble = "EUR-44_CO2_corr",
     x = d_Ta,
     y = d_g_eff_CO2_corr,
     fill = "#2e8b57",
     color = "#2e8b57",
     linetype = "dashed"
   ) |>
-  select(x, y, model, color, fill, border, shape, label, linetype)
+  select(x, y, ensemble, color, fill, border, shape, model, linetype)
 
 # Combine all points
 points_all <- bind_rows(points_base, points_corr)
@@ -1005,7 +1004,7 @@ ggsave('../plots/ggplot2/delta_g_eff_over_g_eff_vs_Ta_ggplot2_TIDY.png', plot = 
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
@@ -1014,7 +1013,7 @@ Data_to_plot <- Data_to_plot |>
   )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_g_eff_over_g_eff_CHECK, d_g_eff_over_g_eff, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_g_eff_over_g_eff_CHECK, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_g_eff_over_g_eff_CHECK", y = "d_g_eff_over_g_eff"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote('('*Delta*'R'['n']*'/'*'R'['n']~'-'~Delta*'B'['o']*'/(1 + '*'B'['o']*')'~'-'~Delta*'VPD'*'/VPD'*') / ('*1 + ~Delta*'VPD'*'/VPD)'),
@@ -1058,7 +1057,7 @@ Data_to_plot_II <- annual_stats |>
     ),
     linetype = "solid"
   ) |>
-  rename(model = ENSEMBLE, label = MODEL)
+  rename(ensemble = ENSEMBLE, model = MODEL)
 
 attributes(Data_to_plot_II)
 
@@ -1069,14 +1068,14 @@ attr(Data_to_plot_II, "description") <- "This data frame was created to plot not
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble = c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = VPD, y = g_eff, model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = VPD, y = g_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   Y_range_man = c(2, 17.2),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
@@ -1134,7 +1133,7 @@ LM_eq_labels <- tibble(
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_g_eff_over_g_eff, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_g_eff_over_g_eff"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*g[eff]~"/"~g[eff]),
@@ -1176,15 +1175,15 @@ make_scatter_plot(
   data = Data_to_plot_II |>
     mutate(
       g_eff = if_else(
-        PERIOD == "2076_2100" & model %in% c("CMIP5", "CMIP6"),
+        PERIOD == "2076_2100" & ensemble %in% c("CMIP5", "CMIP6"),
         1 / (rs_CO2_inv(rs_eff)) * 1000,
         g_eff
       ),
       x = VPD,
       y = g_eff,
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1205,15 +1204,15 @@ make_scatter_plot(
   data = Data_to_plot_II |>
     mutate(
       g_eff = if_else(
-        PERIOD == "2076_2100" & model %in% c("EUR-44"),
+        PERIOD == "2076_2100" & ensemble %in% c("EUR-44"),
         1 / (rs_CO2(rs_eff)) * 1000,
         g_eff
       ),
       x = VPD,
       y = g_eff,
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1232,8 +1231,8 @@ ggsave('../plots/ggplot2/g_eff_versus_VPD_RCM_corr_ggplot2_TIDY.png', plot = p, 
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = VPD, y = g_eff / (H + LE), model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = VPD, y = g_eff / (H + LE), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1261,9 +1260,9 @@ make_scatter_plot(
       ),
       x = VPD,
       y = g_eff / (H + LE),
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1290,9 +1289,9 @@ make_scatter_plot(
       ),
       x = VPD,
       y = g_eff / (H + LE),
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1311,8 +1310,8 @@ ggsave('../plots/ggplot2/g_eff_AE_norm_versus_VPD_RCM_corr_ggplot2_TIDY.png', pl
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = VPD, y = g_eff / (Rg), model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = VPD, y = g_eff / (Rg), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1339,9 +1338,9 @@ make_scatter_plot(
       ),
       x = VPD,
       y = g_eff / (Rg),
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1368,9 +1367,9 @@ make_scatter_plot(
       ),
       x = VPD,
       y = g_eff / (Rg),
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1390,14 +1389,14 @@ ggsave('../plots/ggplot2/g_eff_Rg_norm_versus_VPD_RCM_corr_ggplot2_TIDY.png', pl
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = VPD, y = rs_eff, model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = VPD, y = rs_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1424,9 +1423,9 @@ make_scatter_plot(
       ),
       x = VPD,
       y = rs_eff,
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1452,9 +1451,9 @@ make_scatter_plot(
       ),
       x = VPD,
       y = rs_eff,
-      model = interaction(model, PERIOD, drop = TRUE)
+      ensemble = interaction(ensemble, PERIOD, drop = TRUE)
     ) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote('VPD (kPa)'),  
@@ -1474,7 +1473,7 @@ ggsave('../plots/ggplot2/rs_eff_versus_VPD_RCM_corr_ggplot2_TIDY.png', plot = p,
 
 make_scatter_plot(data = Data_to_plot |>
                     mutate(OMEGA = d_g_eff_over_g_eff / d_VPD_over_VPD) |>
-                    select(d_Ta, OMEGA, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, OMEGA, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = d_Ta, y = OMEGA),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'g'['eff']~'/'~'g'['eff']~'/'~'('*Delta*'VPD'~'/'~'VPD)'),
@@ -1488,13 +1487,13 @@ make_scatter_plot(data = Data_to_plot |>
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
                     mutate(d_A_minus_Bo_adj = d_A_over_A - d_Bo_adj) |>
-                    select(d_A_minus_Bo_adj, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_A_minus_Bo_adj, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = d_A_minus_Bo_adj, y = d_ET_over_ET),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta * (R[n] - G) / (R[n] - G) - Delta * B[o] / (1 + B[o])),
@@ -1508,7 +1507,7 @@ make_scatter_plot(data = Data_to_plot |>
 #---------------------------
 # Delta_T versus d_e/e
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_e_over_e, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_e_over_e, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_e_over_e"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'e'~'/'~'e'),
@@ -1554,12 +1553,12 @@ ggsave('../plots/ggplot2/delta_e_over_e_ggplot2_TIDY.png', plot = p, width = Pl_
 Plot_labels <- tibble(
   x = c(0.84, 0.84, 0.84),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_PE_over_PE, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_PE_over_PE, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_PE_over_PE"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'PE'~'/'~'PE'),
@@ -1577,12 +1576,12 @@ annual_stats_wide |>
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.88, 0.83, 0.78),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Rg_over_Rg, d_SW_net_over_SW_net, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rg_over_Rg, d_SW_net_over_SW_net, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_SW_net_over_SW_net"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'R'['g']*'/'*'R'['g']),  y_lab = bquote(Delta*'SW'['net']*'/'*'SW'['net']),
@@ -1603,7 +1602,7 @@ ggsave('../plots/ggplot2/delta_Rg_versus_delta_SW_net_ggplot2_TIDY.png', plot = 
 # Because the denominator is negative, the d_LW_net_over_LW_net_RCMs_a with delta being positive becomes a negative number
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Rg_over_Rg, d_LW_net_over_LW_net, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rg_over_Rg, d_LW_net_over_LW_net, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_LW_net_over_LW_net"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'R'['g']*'/'*'R'['g']),  y_lab = bquote(Delta*'LW'['net']*'/'*'LW'['net']),
@@ -1618,12 +1617,12 @@ ggsave('../plots/ggplot2/delta_Rg_versus_delta_LW_net_ggplot2_TIDY.png', plot = 
 Plot_labels <- tibble(
   x = c(0.84, 0.84, 0.84),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Rg_over_Rg, d_Rn_over_Rn, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rg_over_Rg, d_Rn_over_Rn, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_Rn_over_Rn"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'R'['g']*'/'*'R'['g']),  y_lab = bquote(Delta*'R'['n']*'/'*'R'['n']),
@@ -1637,7 +1636,7 @@ ggsave('../plots/ggplot2/delta_Rg_versus_delta_Rn_ggplot2_TIDY.png', plot = p7, 
 # Delta_Rn versus delta_ET/ET
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_A_over_A, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_A_over_A, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_A_over_A", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta * (R[n] - G) / (R[n] - G)),  y_lab = bquote(Delta * ET / ET %~~% Delta * (R[n] - G) / (R[n] - G) - Delta * B[o] / (1 + B[o])),
@@ -1677,12 +1676,12 @@ ggsave('../plots/ggplot2/panel_fig_Rg&Rn_relations_TIDY.png', plot = panel_figur
 Plot_labels <- tibble(
   x = c(0.84, 0.84, 0.84),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_A_over_A, d_Bo_adj, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_A_over_A, d_Bo_adj, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_A_over_A", y = "d_Bo_adj"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta * (R[n] - G) / (R[n] - G)),
@@ -1710,7 +1709,7 @@ Data_to_plot_II <- Data_to_plot_II |>
   relocate(PET, n, ω, .before = color)
 
 # Create the boxplot
-p <- ggplot(Data_to_plot_II, aes(x = PERIOD, y = ω, fill = model)) +
+p <- ggplot(Data_to_plot_II, aes(x = PERIOD, y = ω, fill = ensemble)) +
   stat_boxplot(geom = "errorbar", width = 0.2, coef = 3,
                position = position_dodge(width = 0.8)) +
   geom_boxplot(coef = 3, position = position_dodge(width = 0.8)) +
@@ -1785,14 +1784,14 @@ simple_scatter_plot(Data_to_plot_II, ET / PET, VPD)
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = ET / PET, y = n, model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = ET / PET, y = n, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote("ET / PET"),  
@@ -2089,12 +2088,12 @@ panel_c <- Budyko_plot |>
 Plot_labels <- tibble(
   x = c(0.04, 0.04, 0.04),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_VPD_over_VPD, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_VPD_over_VPD, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_VPD_over_VPD"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'T'['a']~'(°C)'),  y_lab = bquote(Delta*'VPD/'*'VPD'),
@@ -2188,12 +2187,12 @@ ggplot(Data_to_plot_II |>
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'AI / AI = '*Delta*'(PET/P) / (PET/P)'),
@@ -2207,7 +2206,7 @@ ggsave('../plots/ggplot2/delta_AI_over_AI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 #######################
 # Normalized EI vs. VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_EI_over_EI, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_EI_over_EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_EI_over_EI"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'EI / EI = '*Delta*'(ET/P) / (ET/P)'),
@@ -2218,7 +2217,7 @@ ggsave('../plots/ggplot2/delta_EI_over_EI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 
 # Normalized PET vs. VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'PET/'*'PET'),
@@ -2229,7 +2228,7 @@ ggsave('../plots/ggplot2/delta_PET_over_PET_vs_delta_VPD_over_VPD_ggplot2_TIDY.p
 
 # Normalized P vs. VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'P/'*'P'),
@@ -2240,7 +2239,7 @@ ggsave('../plots/ggplot2/delta_P_over_P_vs_delta_VPD_over_VPD_ggplot2_TIDY.png',
 
 # Normalized ET vs. VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'ET/'*'ET'),
@@ -2253,7 +2252,7 @@ ggsave('../plots/ggplot2/delta_ET_over_ET_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 Plot_labels <- tibble(
   x = c(0.82, 0.82, 0.82),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
@@ -2263,7 +2262,7 @@ LM_eq_labels <- tibble(
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_g_eff_over_g_eff, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_g_eff_over_g_eff"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*g[eff]~"/"~g[eff]),
@@ -2327,7 +2326,7 @@ Data_to_plot_III <- Data_to_plot_III |>
   mutate(EI_1st_order_predict = d_ET_over_ET - d_P_over_P)
 
 make_scatter_plot(data = Data_to_plot_III |>
-                    select(d_EI_over_EI, EI_1st_order_predict, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_EI_over_EI, EI_1st_order_predict, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_EI_over_EI", y = "EI_1st_order_predict"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'EI / EI = '*Delta*'(ET/P) / (ET/P)'),  y_lab = bquote(Delta*'EI / EI = '*Delta*'(ET/P) / (ET/P)'),
@@ -2341,7 +2340,7 @@ rm(Data_to_plot_III)
 #####################################
 # Normalized AI_CO2 corrected vs. VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*AI[CO[2]]/AI),
@@ -2359,8 +2358,8 @@ ggsave('../plots/ggplot2/delta_AI_CO2_corr_over_AI_vs_delta_VPD_over_VPD_ggplot2
 ###########
 # P vs. VPD
 make_scatter_plot(data = Data_to_plot_II |>
-                    mutate(x = VPD, y = P, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = P, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("P (mm/yr)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
@@ -2372,8 +2371,8 @@ ggsave('../plots/ggplot2/P_vs_VPD_ggplot2_TIDY.png', plot = p_P_VPD, width = Pl_
 ###########
 # ET vs. VPD
 make_scatter_plot(data = Data_to_plot_II |>
-                    mutate(x = VPD, y = ET, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = ET, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE,
                   xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
@@ -2555,7 +2554,7 @@ arrow_data <- Data_to_plot_II  |>
   filter(PERIOD %in% c("1981_2005", "2076_2100"),
          !is.na(VPD), !is.na(ET)) |>
   mutate(PERIOD = factor(PERIOD, levels = c("1981_2005", "2076_2100"))) |>
-  group_by(model, label) |>
+  group_by(ensemble, model) |>
   arrange(PERIOD, .by_group = TRUE) |>
   summarise(
     x     = first(VPD),         # start x (1981–2005)
@@ -2567,9 +2566,9 @@ arrow_data <- Data_to_plot_II  |>
   ) |>
   filter(!is.na(x), !is.na(y), !is.na(xend), !is.na(yend)) |>
   mutate(
-    Scenario = model,  # used only for thickness rule below
-    # “thick” if EUR-44 or label mentions as driving GCM
-    driving_gcm = str_detect(toupper(label), paste0(driving_GCMs, collapse = "|")),
+    Scenario = ensemble,  # used only for thickness rule below
+    # “thick” if EUR-44 or model mentions as driving GCM
+    driving_gcm = str_detect(toupper(model), paste0(driving_GCMs, collapse = "|")),
     arrow_type = if_else(Scenario == "RCMs" | driving_gcm, "thick", "thin"),
     line_size  = if_else(arrow_type == "thick", 0.8, 0.3)  # mapped via scale_size_manual below
   )
@@ -2637,14 +2636,14 @@ ggsave('../plots/ggplot2/ET_vs_VPD_arrow_ggplot2_TIDY.png',
 Plot_labels <- tibble(
   x = c(0.03, 0.03, 0.03),
   y = c(0.96, 0.91, 0.86),
-  model = c("CMIP5", "CMIP6", "EUR-44"),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = 1/sqrt(VPD), y = g_eff, model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = 1/sqrt(VPD), y = g_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = FALSE, 
   xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0.904, 2.496),
   x_lab = bquote(1/sqrt(VPD)~"(kPa"^"-0.5"*")"),  
@@ -2732,8 +2731,8 @@ LM_eq_labels <- tibble(
 
 make_scatter_plot(
   data = Data_to_plot_II |>
-    mutate(x = 1/sqrt(VPD), y = g_eff, model = interaction(model, PERIOD, drop = TRUE)) |>
-    select(model, label, color, fill, border, shape, linetype, x, y),
+    mutate(x = 1/sqrt(VPD), y = g_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, LM_eq_labels = LM_eq_labels,
   xy_round = 0.05, xy_offset = 0.04,
   x_lab = bquote(1/sqrt(VPD)~"(kPa"^"-0.5"*")"),  
@@ -2748,7 +2747,7 @@ FITS <- Data_to_plot_II |>
   mutate(
     x = 1 / sqrt(VPD),
     y = g_eff,
-    model = interaction(model, PERIOD, drop = TRUE)
+    ensemble = interaction(ensemble, PERIOD, drop = TRUE)
   ) |>
   group_by(model) |>
   summarise(
@@ -2764,7 +2763,7 @@ Data_with_pred <- Data_to_plot_II |>
   mutate(
     x = 1/sqrt(VPD),
     y = g_eff,
-    model = interaction(model, PERIOD, drop = TRUE)
+    ensemble = interaction(ensemble, PERIOD, drop = TRUE)
   ) |> 
   left_join(FITS, by = "model") |> 
   mutate(g_eff_predicted = intercept + slope * x)
@@ -2780,7 +2779,7 @@ Data_with_pred <- Data_with_pred |>
 
 # Predicted vs. original ET
 make_scatter_plot(data = Data_with_pred  |>
-                    select(ET, ET_predicted, model, color, fill, border, shape, label, linetype) |> 
+                    select(ET, ET_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "ET", y = "ET_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(ET~"(mm/yr)"),  y_lab = bquote(ET[predicted]~"(mm/yr)"),
@@ -2830,7 +2829,7 @@ Data_with_pred <- Data_with_pred |>
 Data_with_pred |> pull(g_eff_resids) |> plot()
 
 make_scatter_plot(data = Data_with_pred  |>
-                    select(VPD, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -2842,7 +2841,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_VPD.png', plot = g_eff_resids_relation
 
 # Global radiation
 make_scatter_plot(data = Data_with_pred |>
-                    select(Rg, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(Rg, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Rg", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(R[g]),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -2854,7 +2853,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_Rg.png', plot = g_eff_resids_relations
 
 # Precipitation
 make_scatter_plot(data = Data_with_pred |>
-                    select(P, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(P, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "P", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(P),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -2866,7 +2865,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_P.png', plot = g_eff_resids_relations,
 
 # Temperature
 make_scatter_plot(data = Data_with_pred |>
-                    select(Ta, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(Ta, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Ta", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(P),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -2881,7 +2880,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_Ta.png', plot = g_eff_resids_relations
 
 # Predicted geff vs. observed
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(ETo_FAO56_alfalfa, ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(ETo_FAO56_alfalfa, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "ETo_FAO56_alfalfa", y = "ET"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(352, 1648), Y_range_man = c(384, 816),
                   x_lab = bquote("PET (mm yr"^"-1"*")"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
@@ -2936,7 +2935,7 @@ Fit_Jarvis <- FALSE
 if(Fit_Jarvis){
   source("./src/Jarvis_model_min_max.R")
 }else{
-  load("./RData/20250910_jarvis_objects.RData")
+  load("./RData/20250928_jarvis_objects.RData")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }
 source("./src/Jarvis_ALE_curves_smoothed_overlay.R")
@@ -2944,8 +2943,8 @@ source("./src/Jarvis_ALE_curves_smoothed_overlay.R")
 
 # Predicted ET vs. observed
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = ET, y = ET_predicted, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = ET, y = ET_predicted, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(400-16, 800+16), Y_range_man = c(400-16, 800+16),
                   x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -2957,7 +2956,7 @@ cor.test(jarvis_out$ET, jarvis_out$ET_predicted)
 
 # Predicted geff vs. observed
 make_scatter_plot(data = jarvis_out |>
-                    select(g_eff, g_eff_predicted, model, color, fill, border, shape, label, linetype) |> 
+                    select(g_eff, g_eff_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "g_eff", y = "g_eff_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(1-0.52, 14+0.52), Y_range_man = c(1-0.52, 14+0.52),
                   x_lab = bquote(g_eff),  y_lab = bquote("g"["eff predicted"]),
@@ -2970,7 +2969,7 @@ cor.test(jarvis_out$g_eff, jarvis_out$g_eff_predicted)
 
 # Predicted ET vs. VPD
 make_scatter_plot(data = jarvis_out |>
-                    select(VPD, ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "ET"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = c(384, 816),
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
@@ -3004,7 +3003,7 @@ ggsave('../plots/ggplot2/ET_vs_VPD_ALE.png', plot = ET_predicted_vs_VPD, width =
 #--------------------
 # Predicted ET vs. Rg
 make_scatter_plot(data = jarvis_out |>
-                    select(Rg, ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(Rg, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Rg", y = "ET"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(70, 170), Y_range_man = c(384, 816),
                   x_lab = bquote("R"[g]~"(W m"^"-2"*")"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
@@ -3032,7 +3031,7 @@ ggsave('../plots/ggplot2/ET_vs_Rg_ALE.png', plot = ET_predicted_vs_Rg, width = P
 #--------------------
 # Predicted ET vs. Ta
 make_scatter_plot(data = jarvis_out |>
-                    select(Ta, ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(Ta, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Ta", y = "ET"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(5-0.48, 17.48), Y_range_man = c(384, 816),
                   x_lab = bquote("T"[a]~"(°C)"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
@@ -3060,7 +3059,7 @@ ggsave('../plots/ggplot2/ET_vs_Ta_ALE.png', plot = ET_predicted_vs_Ta, width = P
 #-------------------
 # Predicted ET vs. P
 make_scatter_plot(data = jarvis_out |>
-                    select(P, ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(P, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "P", y = "ET"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(576, 1224), Y_range_man = c(384, 816),
                   x_lab = bquote("P (mm yr"^"-1"*")"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
@@ -3135,7 +3134,7 @@ ggsave("../plots/ggplot2/g_eff_vs_sqrt_VPD,ET_vs_VPD,Rg,Ta,P_ggplot2_TIDY.png", 
 
 # Sort by VPD
 jarvis_out |> 
-  select(VPD, ET, P, Ta, label, model, PERIOD) |>
+  select(VPD, ET, P, Ta, model, ensemble, PERIOD) |>
   na.omit() |>
   arrange(VPD) |>
   write.csv("../outputs/models_rank.csv", row.names = FALSE)
@@ -3188,24 +3187,24 @@ plot(jarvis_out$VPD,
 
 # Predicted ET vs. observed
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * fVPD, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
                   x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="ET_predicted_vs_VPD")
 
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * (fP*0 + mean(fP, na.rm = TRUE)) * fRg * fTa * fVPD, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(0, 1), Y_range_man = c(400-16, 800+16),
                   x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="ET_predicted_mean_fP_vs_VPD")
 
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE)), model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * fP * fRg * fTa * (fVPD*0 + mean(fVPD, na.rm = TRUE)), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -3213,8 +3212,8 @@ make_scatter_plot(data = jarvis_out  |>
 
 # VPD effect
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa_mean * fVPD, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa_mean * fVPD, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -3222,8 +3221,8 @@ make_scatter_plot(data = jarvis_out  |>
 
 # Precipitation effect
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP * fRg_mean * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * fP * fRg_mean * fTa_mean * fVPD_mean, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -3231,8 +3230,8 @@ make_scatter_plot(data = jarvis_out  |>
 
 # Temperature effect
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg_mean * fTa * fVPD_mean, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -3241,8 +3240,8 @@ make_scatter_plot(data = jarvis_out  |>
 
 # Radiation effect
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = VPD, y = K_ET * fP_mean * fRg * fTa_mean * fVPD_mean, model = interaction(model, PERIOD, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    mutate(x = VPD, y = K_ET * fP_mean * fRg * fTa_mean * fVPD_mean, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["eff predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -3273,7 +3272,7 @@ plot(jarvis_out$VPD,
 num_vars <- names(jarvis_out)[sapply(jarvis_out, is.numeric)]
 
 jarvis_diffs <- jarvis_out |> 
-  group_by(label, model) |> 
+  group_by(model, ensemble) |> 
   summarise(
     across(all_of(num_vars), ~ .[PERIOD == "1981_2005"][1], .names = "{.col}_hist"),
     across(all_of(num_vars), ~ .[PERIOD == "2076_2100"][1], .names = "{.col}_fut"),
@@ -3432,7 +3431,7 @@ plot(jarvis_diffs$dET_predicted_norm, dET_norm_predicted_from_TO)
 ################################################################################
 # Now remove the modifiers
 jarvis_diffs <- jarvis_diffs |>
-  arrange(model, label)
+  arrange(ensemble, model)
 
 jarvis_diffs <- jarvis_diffs |>
   mutate(dETnorm_predicted_from_TO = dET_norm_third_order(1*dVPD_norm, 1*dfRg_norm, 1*dfTa_norm, 1*dfP_norm, 1*dfVPD_norm)) |> 
@@ -3444,7 +3443,7 @@ plot(jarvis_diffs$ET_predicted_fut, jarvis_diffs$ET_fut_predicted_from_TO_and_hi
 
 part_1 <- jarvis_diffs |> 
   select(
-    model, label,
+    ensemble, model,
     ET_predicted_from_TO_and_hist = ET_hist,
     P = P_hist
   ) |> 
@@ -3452,7 +3451,7 @@ part_1 <- jarvis_diffs |>
 
 part_2 <- jarvis_diffs |> 
   select(
-    model, label,
+    ensemble, model,
     ET_predicted_from_TO_and_hist = ET_fut_predicted_from_TO_and_hist,
     P = P_fut
   ) |> 
@@ -3462,14 +3461,14 @@ merged <- bind_rows(part_1, part_2)
 
 # normalize keys (trim spaces) on both sides, keep only needed column from Data_to_plot_II
 dtp_join <- Data_to_plot_II |> 
-  mutate(across(c(PERIOD, model, label), ~ str_squish(as.character(.)))) |> 
-  select(PERIOD, model, label, ETo_FAO56_alfalfa) |> 
+  mutate(across(c(PERIOD, ensemble, model), ~ str_squish(as.character(.)))) |> 
+  select(PERIOD, ensemble, model, ETo_FAO56_alfalfa) |> 
   distinct()
 
 merged <- merged |> 
-  mutate(across(c(PERIOD, model, label), ~ str_squish(as.character(.)))) |> 
-  left_join(dtp_join, by = c("PERIOD", "model", "label")) |> 
-  mutate(ENSEMBLE = model, MODEL = label)
+  mutate(across(c(PERIOD, ensemble, model), ~ str_squish(as.character(.)))) |> 
+  left_join(dtp_join, by = c("PERIOD", "ensemble", "model")) |> 
+  mutate(ENSEMBLE = ensemble, MODEL = model)
 
 
 out_BC_FAO56_alfalfa_ET_semipredicted <- Budyko_curve(merged,
@@ -3502,10 +3501,10 @@ jarvis_diffs$ET_future_no_fVPD <- ET_future_no_fVPD
 test_data <- Data_to_plot_II |> filter(PERIOD == "2076_2100")
 
 test_data_sorted <- test_data |> 
-  arrange(model, label)
+  arrange(ensemble, model)
 
 jarvis_diffs_sorted <- jarvis_diffs |> 
-  arrange(model, label)
+  arrange(ensemble, model)
 
 plot(test_data_sorted$ET, jarvis_diffs_sorted$ET_fut)
 
@@ -3526,7 +3525,7 @@ plot(test_data_sorted$ETo_FAO56_alfalfa / test_data_sorted$P,
 
 # Predicted ET vs. VPD
 make_scatter_plot(data = jarvis_out |>
-                    select(VPD, ET_predicted, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, ET_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "ET_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["predicted"]),
@@ -3542,14 +3541,14 @@ part_1 <- annual_stats_wide |>
   select(PERIOD, ENSEMBLE, MODEL, ETo_FAO56_alfalfa = ETo_FAO56_alfalfa, ET = ET, P = P)
 
 part_2 <- jarvis_out |> 
-  select(PERIOD, model, label, ET_predicted = ET_predicted, ET = ET, P = P)
+  select(PERIOD, ensemble, model, ET_predicted = ET_predicted, ET = ET, P = P)
 
 # 2) Inner-join on the matching keys:
 part_join <- part_1 |> 
   inner_join(part_2,
              by = c("PERIOD" = "PERIOD",
-                    "ENSEMBLE" = "model",
-                    "MODEL"    = "label"))
+                    "ENSEMBLE" = "ensemble",
+                    "MODEL"    = "model"))
 
 View(part_join)
 
@@ -3589,7 +3588,7 @@ ggsave('../plots/ggplot2/panel_fig_EI,AI,geff&VPD_TIDY.png', plot = panel_figure
 ############
 # P vs. VPD
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(VPD, P, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "P"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("P (mm yr"^"-1"*")"),
@@ -3603,7 +3602,7 @@ ggsave('../plots/ggplot2/P_vs_VPD_ggplot2_TIDY.png', plot = p_P_VPD, width = Pl_
 ############
 # EI vs. VPD
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(VPD, EI, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "EI"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("EI = ET/P"),
@@ -3678,7 +3677,7 @@ arrow_data <- Data_to_plot_II  |>
   filter(PERIOD %in% c("1981_2005", "2076_2100"),
          !is.na(VPD), !is.na(EI)) |>
   mutate(PERIOD = factor(PERIOD, levels = c("1981_2005", "2076_2100"))) |>
-  group_by(model, label) |>
+  group_by(ensemble, model) |>
   arrange(PERIOD, .by_group = TRUE) |>
   summarise(
     x     = first(VPD),
@@ -3690,8 +3689,8 @@ arrow_data <- Data_to_plot_II  |>
   ) |>
   filter(!is.na(x), !is.na(y), !is.na(xend), !is.na(yend)) |>
   mutate(
-    Scenario = model,
-    is_driven_by_key_gcm = str_detect(toupper(label), paste0(driving_GCMs, collapse = "|")),
+    Scenario = ensemble,
+    is_driven_by_key_gcm = str_detect(toupper(model), paste0(driving_GCMs, collapse = "|")),
     arrow_type = if_else(Scenario == "RCMs" | is_driven_by_key_gcm, "thick", "thin"),
     line_size  = if_else(arrow_type == "thick", 0.8, 0.3)
   )
@@ -3736,7 +3735,7 @@ Data_to_plot_II <- Data_to_plot_II |>
 
 # Predicted vs. original ET
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(g_eff, g_eff_predicted, model, color, fill, border, shape, label, linetype) |> 
+                    select(g_eff, g_eff_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "g_eff", y = "g_eff_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(g["eff"]~"(mm/s)"),  y_lab = bquote(g["eff predicted"]~"(mm/s)"),
@@ -3754,7 +3753,7 @@ Data_to_plot_II <- Data_to_plot_II |>
 
 # Predicted vs. original ET
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(ET, ET_predicted, model, color, fill, border, shape, label, linetype) |> 
+                    select(ET, ET_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "ET", y = "ET_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(ET~"(mm/yr)"),  y_lab = bquote(ET[predicted]~"(mm/yr)"),
@@ -3772,7 +3771,7 @@ Data_to_plot_II <- Data_to_plot_II |>
 Data_to_plot_II |> pull(g_eff_resids) |> plot()
 
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(VPD, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -3784,7 +3783,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_VPD.png', plot = g_eff_resids_relation
 
 # Global radiation
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(Rg, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(Rg, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Rg", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(R[g]),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -3796,7 +3795,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_Rg.png', plot = g_eff_resids_relations
 
 # Air temperature
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(Ta, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(Ta, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Ta", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(T[a]),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -3808,7 +3807,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_Ta.png', plot = g_eff_resids_relations
 
 # Precipitation
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(P, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(P, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "P", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(P),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -3821,7 +3820,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_P.png', plot = g_eff_resids_relations,
 #---------------
 # Merging tibles
 
-keys <- c("PERIOD", "model", "label")
+keys <- c("PERIOD", "ensemble", "model")
 aesthetic_cols <- c("color", "fill", "border", "shape", "linetype")
 
 # 1) Normalize key types
@@ -3861,7 +3860,7 @@ if (nrow(unmatched)) {
 #--------------
 # Precipitation
 make_scatter_plot(data = merged_df |>
-                    select(P, g_eff_resids, model, color, fill, border, shape, label, linetype) |> 
+                    select(P, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "P", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(P),  y_lab = bquote("g"["eff predicted"] - "g"[eff]),
@@ -3883,7 +3882,7 @@ merged_df <- merged_df |>
 # Normalized aridity index and g_eff_ref
 make_scatter_plot(data = merged_df |>
                     select(d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa,
-                           d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                           d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3897,7 +3896,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_d_AI_over_AI.png', plot = d_g_
 #---------------------------------------
 # Normalized precipitation and g_eff_ref
 make_scatter_plot(data = merged_df |>
-                    select(d_P_over_P, d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_P_over_P, d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_P_over_P", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3911,7 +3910,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_P_over_P.png', plot = d_g_eff_
 #----------------------------
 # Precipitation and g_eff_ref
 make_scatter_plot(data = merged_df |>
-                    select(P, d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                    select(P, d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "P", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3925,7 +3924,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_P.png', plot = d_g_eff_ref_g_e
 #---------------------------------------
 # Normalized net radiation and g_eff_ref
 make_scatter_plot(data = merged_df |>
-                    select(d_Rn_over_Rn, d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rn_over_Rn, d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rn_over_Rn", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3939,7 +3938,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_Rn_over_Rn.png', plot = d_g_ef
 #------------------------------------------
 # Normalized global radiation and g_eff_ref
 make_scatter_plot(data = merged_df |>
-                    select(d_Rg_over_Rg, d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rg_over_Rg, d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3953,7 +3952,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_Rg_over_Rg.png', plot = d_g_ef
 #---------------------------------------------------
 # Change in air temperature and normalized g_eff_ref
 make_scatter_plot(data = merged_df |>
-                    select(d_Ta, d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3967,7 +3966,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_d_Ta.png', plot = d_g_eff_ref_
 #----------------------------------------------------------
 # Change in vapor pressure deficit and normalized g_eff_ref
 make_scatter_plot(data = merged_df |>
-                    select(d_VPD_over_VPD, d_g_eff_ref_over_g_eff_ref, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_g_eff_ref_over_g_eff_ref, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_g_eff_ref_over_g_eff_ref") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3981,7 +3980,7 @@ ggsave('../plots/ggplot2/d_g_eff_ref_g_eff_ref_vs_d_VPD_over_VPD.png', plot = d_
 #---------------------------------------
 # Normalized net radiation and precipitation
 make_scatter_plot(data = merged_df |>
-                    select(d_Rn_over_Rn, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rn_over_Rn, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rn_over_Rn", y = "d_P_over_P") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3995,7 +3994,7 @@ ggsave('../plots/ggplot2/d_P_over_P_vs_Rn_over_Rn.png', plot = d_P_over_P_vs_Rn_
 #----------------------------------------------
 # Normalized global radiation and precipitation
 make_scatter_plot(data = merged_df |>
-                    select(d_Rg_over_Rg, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Rg_over_Rg, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_P_over_P") |> 
                     mutate(shape = 21),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -4009,7 +4008,7 @@ ggsave('../plots/ggplot2/d_P_over_P_vs_Rg_over_Rg.png', plot = d_P_over_P_vs_Rg_
 ############
 # EI vs. VPD
 make_scatter_plot(data = Data_to_plot_II |>
-                    select(VPD, EI, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "EI"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("EI = ET/P"),
@@ -4082,7 +4081,7 @@ ggsave('../plots/ggplot2/EI_vs_VPD_ggplot2_TIDY.png', plot = p_EI_VPD, width = P
 
 # With normalized VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'ET/'*'ET'),
@@ -4094,7 +4093,7 @@ ggsave('../plots/ggplot2/delta_ET_over_ET_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 
 # With normalized VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'PET/'*'PET'),
@@ -4108,7 +4107,7 @@ ggsave('../plots/ggplot2/delta_PET_over_PET_vs_delta_VPD_over_VPD_ggplot2_TIDY.p
 
 # With normalized VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_EI_over_EI, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_EI_over_EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_EI_over_EI"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'EI/'*'EI'),
@@ -4120,7 +4119,7 @@ ggsave('../plots/ggplot2/delta_EI_over_EI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 
 # With normalized VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'AI/'*'AI'),
@@ -4130,7 +4129,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_AI_over_AI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_AI_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*AI[CO[2]]/AI),
@@ -4146,7 +4145,7 @@ Data_to_plot <- Data_to_plot |>
 
 # With normalized VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, dET_to_PET_ratio_over_ET_to_PET_ratio, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, dET_to_PET_ratio_over_ET_to_PET_ratio, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "dET_to_PET_ratio_over_ET_to_PET_ratio"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'VPD/VPD'),  y_lab = bquote(Delta*'(ET/PET) / (ET/PET)'),
@@ -4157,7 +4156,7 @@ ggsave('../plots/ggplot2/delta_ET_to_PET_ratio_over_ET_to_PET_ratio_vs_delta_VPD
 
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD_over_VPD, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD_over_VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'VPD/'*'VPD'),  y_lab = bquote(Delta*'P/'*'P'),
@@ -4168,7 +4167,7 @@ ggsave('../plots/ggplot2/delta_P_over_P_vs_delta_VPD_over_VPD_ggplot2_TIDY.png',
 
 # With absolute values of VPD
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'VPD (kPa)'),  y_lab = bquote(Delta*'ET/'*'ET'),
@@ -4179,7 +4178,7 @@ ggsave('../plots/ggplot2/delta_ET_over_ET_vs_delta_VPD_ggplot2_TIDY.png', plot =
 
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_VPD, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(Delta*'VPD (kPa)'),  y_lab = bquote(Delta*'P/'*'P'),
@@ -4194,7 +4193,7 @@ Data_to_plot <- Data_to_plot |>
   mutate(VPD = d_VPD / d_VPD_over_VPD)
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(VPD, d_ET_over_ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(Delta*'ET/'*'ET'),
@@ -4205,7 +4204,7 @@ ggsave('../plots/ggplot2/delta_ET_over_ET_vs_VPD_historical_ggplot2_TIDY.png', p
 
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(VPD, d_P_over_P, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
                   x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(Delta*'P/'*'P'),
@@ -4223,7 +4222,7 @@ Data_to_plot <- Data_to_plot |>
   mutate(ET = d_ET / d_ET_over_ET)
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(VPD, ET, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(ET["1981–2005"]~"(mm yr"^"-1"*")"),
@@ -4233,7 +4232,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/ET_vs_VPD_historical_ggplot2_TIDY.png', plot = p_ET_VPD_historical, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(VPD, P, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD, P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(P["1981–2005"]~"(mm yr"^"-1"*")"),
@@ -4251,7 +4250,7 @@ Data_to_plot <- Data_to_plot |>
   mutate(ET_RCP = d_ET + ET)
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(VPD_RCP, ET_RCP, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD_RCP, ET_RCP, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD_RCP", y = "ET_RCP"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["2076–2100"]~"(kPa)"),  y_lab = bquote(ET["2076–2100"]~"(mm yr"^"-1"*")"),
@@ -4262,7 +4261,7 @@ ggsave('../plots/ggplot2/ET_vs_VPD_RCP_ggplot2_TIDY.png', plot = p_ET_VPD_RCP, w
 
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(VPD_RCP, P_RCP, model, color, fill, border, shape, label, linetype) |> 
+                    select(VPD_RCP, P_RCP, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD_RCP", y = "P_RCP"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["2076–2100"]~"(kPa)"),  y_lab = bquote(P["2076–2100"]~"(mm yr"^"-1"*")"),
@@ -4294,9 +4293,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("EI"),
-                                      by   = c("model","label")) |>
-                    mutate(x = EI_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = EI_hist, y = EI_fut, ensemble = interaction(ensemble, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(EI["1981–2005"]),  y_lab = bquote(EI["2076–2100"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4308,9 +4307,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("EI", "VPD"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(EI["2076–2100"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4322,9 +4321,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("AI_FAO56_alfalfa"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = AI_FAO56_alfalfa_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(AI["1981–2005"]),  y_lab = bquote(AI["2076–2100"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4336,9 +4335,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ET", "ETo_FAO56_alfalfa"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = ET_fut/ ETo_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("ET/PET"["2076–2100"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4352,9 +4351,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ETo_FAO56_alfalfa"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = ETo_FAO56_alfalfa_hist, y = ETo_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote("PET"["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4367,9 +4366,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ETo_FAO56_alfalfa"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = ETo_FAO56_alfalfa_hist, y = (ETo_FAO56_alfalfa_fut - ETo_FAO56_alfalfa_hist) / ETo_FAO56_alfalfa_hist, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(Delta*'PET/'*'PET'),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4382,9 +4381,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("P"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = P_hist, y = (P_fut - P_hist) / P_hist, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("P"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(Delta*'P/'*'P'),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4397,9 +4396,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "P"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = (P_fut - P_hist) / P_hist, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("VPD"["1981–2005"]~"(kPa)"),  y_lab = bquote(Delta*'P/'*'P'),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4412,9 +4411,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ET"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = ET_hist, y = ET_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(ET["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(ET["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4426,9 +4425,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("P"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = P_hist, y = P_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(P["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(P["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4440,9 +4439,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = VPD_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(VPD["2076–2100"]~(kPa)),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4454,9 +4453,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "ET"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = ET_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(ET["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4468,9 +4467,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "AI_FAO56_alfalfa"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(AI["2076–2100"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4482,9 +4481,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "P"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = P_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(P["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4496,9 +4495,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("g_eff"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = g_eff_hist, y = g_eff_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(g["eff 1981–2005"]~"(mm s"^"-1"*")"),  y_lab = bquote(g["eff 2076–2100"]~"(mm s"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4510,9 +4509,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "g_eff"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = VPD_hist, y = g_eff_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD["1981–2005"]~"(kPa)"),  y_lab = bquote(g["eff 2076–2100"]~"(mm s"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4524,9 +4523,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("Ta"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = Ta_hist, y = Ta_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(T["a 1981–2005"]~"(°C)"),  y_lab = bquote(T["a 2076–2100"]~"(°C)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4538,9 +4537,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("RH"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = RH_hist, y = RH_fut, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(RH["1981–2005"]~"(%)"),  y_lab = bquote(RH["2076–2100"]~"(%)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4558,9 +4557,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "Ta"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = Ta_fut - Ta_hist, y = log(VPD_fut / VPD_hist), model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   LM_eq_labels = LM_eq_labels, force_origin = TRUE,
                   x_lab = bquote(Delta*T["a"]~"(°C)"),  y_lab = bquote("ln(VPD/VPD)"),
@@ -4577,9 +4576,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "Ta"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = Ta_fut - Ta_hist, y = (VPD_fut - VPD_hist) / VPD_hist, model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   LM_eq_labels = LM_eq_labels, force_origin = FALSE,
                   x_lab = bquote(Delta*T["a"]~"(°C)"),  y_lab = bquote(Delta*"VPD / VPD"),
@@ -4594,9 +4593,9 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ET", "ETo_FAO56_alfalfa"),
-                                      by   = c("model","label")) |>
+                                      by   = c("ensemble","model")) |>
                     mutate(x = ET_hist + ETo_FAO56_alfalfa_hist, y = ET_fut + ETo_FAO56_alfalfa_fut , model = interaction(model, drop = TRUE)) |>
-                    select(model, label, color, fill, border, shape, linetype, x, y),
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote("ET + PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote("ET + PET"["2076–2100"]~"(mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -4612,7 +4611,7 @@ LM_eq_labels <- tibble(
 )
 
 make_scatter_plot(data = Data_to_plot |>
-                    select(d_Ta, d_VPD_over_VPD, model, color, fill, border, shape, label, linetype) |> 
+                    select(d_Ta, d_VPD_over_VPD, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_VPD_over_VPD"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   LM_eq_labels = LM_eq_labels,

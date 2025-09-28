@@ -44,8 +44,8 @@ clamp_P      <- TRUE
 n_max_iter   <- 25000
 
 # Set the metadat and the ouput file name
-metadata <- "Jarvis parameter set and output tibble. Created 2025-09-10 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
-out_file <- "./RData/20250910_jarvis_objects.RData"
+metadata <- "Jarvis parameter set and output tibble. Created 2025-09-28 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
+out_file <- "./RData/20250928_jarvis_objects.RData"
 
 # Guard
 eps <- 1e-6
@@ -59,14 +59,14 @@ df <- Data_to_plot_II
 
 # Select only the variables that are used for the purpose of g_eff modeling
 df <- df |> 
-  select(g_eff, ET, Rg, A, Ta, P, VPD, PERIOD, model, label, 
+  select(g_eff, ET, Rg, A, Ta, P, VPD, PERIOD, ensemble, model, 
          color, fill, border, shape, linetype) |> 
   mutate(
     CO2_term = {
       if (exists("CO2_2076_2100_RCP85", inherits = TRUE) &&
           exists("CO2_1981_2005", inherits = TRUE)) {
         dln <- log(CO2_2076_2100_RCP85 / CO2_1981_2005)
-        if_else(grepl("CMIP", model) & PERIOD == "2076_2100", dln, 0)
+        if_else(grepl("CMIP", ensemble) & PERIOD == "2076_2100", dln, 0)
       } else {
         0
       }

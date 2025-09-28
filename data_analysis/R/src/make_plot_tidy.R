@@ -33,8 +33,8 @@ make_scatter_plot <- function(data,
                               LM_eq_labels = FALSE, plot_labels = FALSE,
                               plot_path = "./", plot_name = FALSE, save_ggplot2_obj_as = FALSE) {
   
-  # Get the model variants
-  models <- unique(data$model)
+  # Get the ensemble variants
+  ensembles <- unique(data$ensemble)
   
   # Perform regression if FIT is TRUE
   if(FIT){
@@ -49,8 +49,8 @@ make_scatter_plot <- function(data,
     fits <- list()
     
     # Iterate over each dataset in data.frame1
-    for (i in seq_along(models)) {
-      XY <- subset(data, model == models[i], select = c(x, y))
+    for (i in seq_along(ensembles)) {
+      XY <- subset(data, ensemble == ensembles[i], select = c(x, y))
       
       # Calculate fits
       if(force_origin == TRUE){
@@ -80,12 +80,12 @@ make_scatter_plot <- function(data,
   if (vline) p <- p + geom_vline(xintercept = 0, linetype = "dashed", color = "grey70")
   if (one_to_one_line) p <- p + geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "#2b2b2b")
   
-  # Add fit lines for each dataset in `models` (so they appear behind points)
+  # Add fit lines for each dataset in `ensembles` (so they appear behind points)
   if (FIT) {
-    for (i in seq_along(models)) {
+    for (i in seq_along(ensembles)) {
       
-      # Subset the data for the current model
-      df <- subset(data, model == models[i], select = c(x, y, color, linetype))
+      # Subset the data for the current ensemble
+      df <- subset(data, ensemble == ensembles[i], select = c(x, y, color, linetype))
       
       # Add a regression line for the current subset
       p <- p + geom_smooth(
@@ -139,8 +139,8 @@ make_scatter_plot <- function(data,
   # Add plot labels if specified in plot_labels
   if (!isFALSE(plot_labels)) {
     
-    for (i in seq_along(plot_labels$model)) {
-      if(!is.na(plot_labels$x[i]) && !is.na(plot_labels$y[i]) && !is.na(plot_labels$model[i])){
+    for (i in seq_along(plot_labels$ensemble)) {
+      if(!is.na(plot_labels$x[i]) && !is.na(plot_labels$y[i]) && !is.na(plot_labels$ensemble[i])){
 
                 # Set defaults for label attributes
         label_hjust <- ifelse(!is.null(plot_labels$hjust[i]), plot_labels$hjust[i], 0)
@@ -151,7 +151,7 @@ make_scatter_plot <- function(data,
         p <- p + annotate("text",
                           x = rescale(plot_labels$x[i], X_range),
                           y = rescale(plot_labels$y[i], Y_range),
-                          label = plot_labels$model[i],
+                          label = plot_labels$ensemble[i],
                           hjust = label_hjust,
                           color = label_color,
                           fontface = label_fontface,
@@ -170,7 +170,7 @@ make_scatter_plot <- function(data,
   # Add labels using ggrepel
   p <- p + geom_text_repel(
     data = data,
-    aes(x = x, y = y, label = label),
+    aes(x = x, y = y, label = model),
     size = 1.5,
     color = ifelse(data$color == COL_RCMs, darken_col(COL_RCMs, 0.6), data$color)
   )
