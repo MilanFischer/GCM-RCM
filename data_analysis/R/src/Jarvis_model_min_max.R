@@ -13,8 +13,8 @@ suppressPackageStartupMessages({
 # -----------------------
 # REQUIRED INPUTS (must already exist in your session)
 # -----------------------
-if (!exists("Data_to_plot_II", inherits = TRUE)) {
-  stop("Missing 'Data_to_plot_II' in your environment.", call. = FALSE)
+if (!exists("Data_to_plot", inherits = TRUE) || is.null(Data_to_plot[["abs"]])) {
+  stop("Missing Data_to_plot[['abs']] in your environment.", call. = FALSE)
 }
 if (!all(c("rhoAir","CpAir","gamma") %in% ls(envir = .GlobalEnv))) {
   stop("Missing physical constants: 'rhoAir', 'CpAir', 'gamma'.", call. = FALSE)
@@ -44,8 +44,8 @@ clamp_P      <- TRUE
 n_max_iter   <- 25000
 
 # Set the metadat and the ouput file name
-metadata <- "Jarvis parameter set and output tibble. Created 2025-09-28 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
-out_file <- "./RData/20250928_jarvis_objects.RData"
+metadata <- "Jarvis parameter set and output tibble. Created 2025-09-29 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
+out_file <- "./RData/20250929_jarvis_objects.RData"
 
 # Guard
 eps <- 1e-6
@@ -54,7 +54,7 @@ eps <- 1e-6
 # Data prep (create needed columns FIRST)
 # -----------------------
 
-df <- Data_to_plot_II
+df <- Data_to_plot$abs
 # df <- df |> mutate(Rg = Rn) # Just for quick testing of replacing Rg by Rn
 
 # Select only the variables that are used for the purpose of g_eff modeling

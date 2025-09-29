@@ -562,7 +562,8 @@ diff <- annual_stats |>
 all_diff <- bind_rows(norm_diff, diff)
 
 # Reshape data: pivot wider to have P and ET in separate columns
-Data_to_plot <- all_diff |> 
+Data_to_plot <- list()
+Data_to_plot[["diffs"]] <- all_diff |> 
   pivot_wider(names_from = VAR, values_from = d_annual_stat) |> 
   mutate(
     # Assign colors based on ENSEMBLE
@@ -609,7 +610,7 @@ LM_eq_labels <- tibble(
   y = c(0.14, 0.09, 0.04)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_ET_over_ET, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_ET_over_ET", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -625,7 +626,7 @@ LM_eq_labels <- data.frame(
   y = c(0.22, 0.17, 0.12)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_ET_over_ET, d_RO_over_RO, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_ET_over_ET", y = "d_RO_over_RO"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -641,7 +642,7 @@ LM_eq_labels <- tibble(
   y = c(0.14, 0.09, 0.04)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_P_over_P, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_P_over_P", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -652,7 +653,7 @@ make_scatter_plot(data = Data_to_plot |>
 
 #----------------
 # dET/ET vs. dRO/RO
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_P_over_P, d_RO_over_RO, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_P_over_P", y = "d_RO_over_RO"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -776,7 +777,7 @@ Plot_labels <- tibble(
 # Manual adjustment
 Y_range_man <- c(-0.12, 0.32)
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -849,7 +850,7 @@ ggsave('../plots/ggplot2/delta_P_over_P_vs_Ta_ggplot2_TIDY.png', plot = p1, widt
 #---------------------------
 # Delta_T versus delta_ET/ET
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -874,7 +875,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_VPD_over_VPD, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_VPD_over_VPD"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -940,12 +941,12 @@ g_eff_corr_RCMs <- annual_stats_wide |>
 # --- Prepare plotting data ---
 
 # Original CMIP5, CMIP6, and EUR-44 points
-points_base <- Data_to_plot |>
+points_base <- Data_to_plot$diffs |>
   select(d_Ta, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |>
   rename(x = d_Ta, y = d_g_eff_over_g_eff)
 
 # CO2-corrected EUR-44 points
-points_corr <- Data_to_plot |>
+points_corr <- Data_to_plot$diffs |>
   filter(ensemble == "EUR-44") |>
   left_join(g_eff_corr_RCMs, by = c("model" = "MODEL")) |>
   mutate(
@@ -1008,11 +1009,11 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-Data_to_plot <- Data_to_plot |> 
+Data_to_plot$diffs <- Data_to_plot$diffs |> 
   mutate(d_g_eff_over_g_eff_CHECK = (d_Rn_over_Rn - d_Bo_adj - d_VPD_over_VPD) / (1 + d_VPD_over_VPD)
   )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_g_eff_over_g_eff_CHECK, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_g_eff_over_g_eff_CHECK", y = "d_g_eff_over_g_eff"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1025,7 +1026,7 @@ make_scatter_plot(data = Data_to_plot |>
 #-------------------------------------------------------------------------------
 
 # Reshape data: pivot wider to have P and ET in separate columns
-Data_to_plot_II <- annual_stats |> 
+Data_to_plot[["abs"]] <- annual_stats |> 
   pivot_wider(names_from = VAR, values_from = annual_stat) |> 
   mutate(
     # Assign colors based on ENSEMBLE
@@ -1059,9 +1060,9 @@ Data_to_plot_II <- annual_stats |>
   ) |>
   rename(ensemble = ENSEMBLE, model = MODEL)
 
-attributes(Data_to_plot_II)
+attributes(Data_to_plot$abs)
 
-attr(Data_to_plot_II, "description") <- "This data frame was created to plot not only the differences but also the actual values within the two examined periods."
+attr(Data_to_plot$abs, "description") <- "This data frame was created to plot not only the differences but also the actual values within the two examined periods."
 #---------------------------
 # VPD versus g_eff
 
@@ -1073,7 +1074,7 @@ Plot_labels <- tibble(
 )
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = VPD, y = g_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   Y_range_man = c(2, 17.2),
@@ -1132,7 +1133,7 @@ LM_eq_labels <- tibble(
   y = c(0.94, 0.86, 0.78)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_g_eff_over_g_eff"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1172,7 +1173,7 @@ ggsave('../plots/ggplot2/g_eff_versus_VPD_ggplot2_no_fit_and_delta_geff_over_gef
 # VPD versus g_eff_corr for GCMs
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       g_eff = if_else(
         PERIOD == "2076_2100" & ensemble %in% c("CMIP5", "CMIP6"),
@@ -1201,7 +1202,7 @@ ggsave('../plots/ggplot2/g_eff_versus_VPD_GCM_corr_ggplot2_TIDY.png', plot = p, 
 # VPD versus g_eff_corr for RCMs
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       g_eff = if_else(
         PERIOD == "2076_2100" & ensemble %in% c("EUR-44"),
@@ -1230,7 +1231,7 @@ ggsave('../plots/ggplot2/g_eff_versus_VPD_RCM_corr_ggplot2_TIDY.png', plot = p, 
 # VPD versus g_eff normalized by available energy
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = VPD, y = g_eff / (H + LE), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
@@ -1251,7 +1252,7 @@ ggsave('../plots/ggplot2/g_eff_AE_norm_versus_VPD_ggplot2_TIDY.png', plot = p, w
 # VPD versus g_eff GCM CO2 corrected and normalized by available energy
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       g_eff = if_else(
         PERIOD == "2076_2100" & model %in% c("CMIP5", "CMIP6"),
@@ -1280,7 +1281,7 @@ ggsave('../plots/ggplot2/g_eff_AE_norm_versus_VPD_GCM_corr_ggplot2_TIDY.png', pl
 # VPD versus g_eff RCM CO2 corrected and normalized by available energy
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       g_eff = if_else(
         PERIOD == "2076_2100" & model %in% c("EUR-44"),
@@ -1309,7 +1310,7 @@ ggsave('../plots/ggplot2/g_eff_AE_norm_versus_VPD_RCM_corr_ggplot2_TIDY.png', pl
 # VPD versus g_eff normalized by global radiation
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = VPD, y = g_eff / (Rg), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
@@ -1329,7 +1330,7 @@ ggsave('../plots/ggplot2/g_eff_Rg_norm_versus_VPD_ggplot2_TIDY.png', plot = p, w
 # VPD versus g_eff GCM CO2 corrected and normalized by global radiation
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       g_eff = if_else(
         PERIOD == "2076_2100" & model %in% c("CMIP5", "CMIP6"),
@@ -1358,7 +1359,7 @@ ggsave('../plots/ggplot2/g_eff_Rg_norm_versus_VPD_GCM_corr_ggplot2_TIDY.png', pl
 # VPD versus g_eff RCM CO2 corrected and normalized by global radiation
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       g_eff = if_else(
         PERIOD == "2076_2100" & model %in% c("EUR-44"),
@@ -1394,7 +1395,7 @@ Plot_labels <- tibble(
 )
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = VPD, y = rs_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
@@ -1414,7 +1415,7 @@ ggsave('../plots/ggplot2/rs_eff_versus_VPD_ggplot2_TIDY.png', plot = p, width = 
 # VPD versus g_eff_corr for GCMs
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       rs_eff = if_else(
         PERIOD == "2076_2100" & model %in% c("CMIP5", "CMIP6"),
@@ -1442,7 +1443,7 @@ ggsave('../plots/ggplot2/rs_eff_versus_VPD_GCM_corr_ggplot2_TIDY.png', plot = p,
 #-------------------------------
 # VPD versus g_eff_corr for RCMs
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(
       rs_eff = if_else(
         PERIOD == "2076_2100" & model %in% c("EUR-44"),
@@ -1471,7 +1472,7 @@ ggsave('../plots/ggplot2/rs_eff_versus_VPD_RCM_corr_ggplot2_TIDY.png', plot = p,
 
 # Assessing whether aerodynamics or thermodynamics dominate the relative change in ET
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     mutate(OMEGA = d_g_eff_over_g_eff / d_VPD_over_VPD) |>
                     select(d_Ta, OMEGA, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = d_Ta, y = OMEGA),
@@ -1491,7 +1492,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     mutate(d_A_minus_Bo_adj = d_A_over_A - d_Bo_adj) |>
                     select(d_A_minus_Bo_adj, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = d_A_minus_Bo_adj, y = d_ET_over_ET),
@@ -1506,7 +1507,7 @@ make_scatter_plot(data = Data_to_plot |>
 
 #---------------------------
 # Delta_T versus d_e/e
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_e_over_e, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_e_over_e"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1557,7 +1558,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_PE_over_PE, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_PE_over_PE"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1580,7 +1581,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Rg_over_Rg, d_SW_net_over_SW_net, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_SW_net_over_SW_net"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1601,7 +1602,7 @@ ggsave('../plots/ggplot2/delta_Rg_versus_delta_SW_net_ggplot2_TIDY.png', plot = 
 # RCMs has less negative values in the future
 # Because the denominator is negative, the d_LW_net_over_LW_net_RCMs_a with delta being positive becomes a negative number
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Rg_over_Rg, d_LW_net_over_LW_net, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_LW_net_over_LW_net"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1621,7 +1622,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Rg_over_Rg, d_Rn_over_Rn, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Rg_over_Rg", y = "d_Rn_over_Rn"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1635,7 +1636,7 @@ ggsave('../plots/ggplot2/delta_Rg_versus_delta_Rn_ggplot2_TIDY.png', plot = p7, 
 #----------------------------
 # Delta_Rn versus delta_ET/ET
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_A_over_A, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_A_over_A", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1680,7 +1681,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_A_over_A, d_Bo_adj, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_A_over_A", y = "d_Bo_adj"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -1698,7 +1699,7 @@ make_scatter_plot(data = Data_to_plot |>
 
 #-------------------------------------------------------------------------------
 # Fitting Budyko curve
-Data_to_plot_II <- Data_to_plot_II |>
+Data_to_plot$abs <- Data_to_plot$abs |>
   mutate(PET = ETo_FAO56_alfalfa) |>
   rowwise() |>
   mutate(
@@ -1709,7 +1710,7 @@ Data_to_plot_II <- Data_to_plot_II |>
   relocate(PET, n, ω, .before = color)
 
 # Create the boxplot
-p <- ggplot(Data_to_plot_II, aes(x = PERIOD, y = ω, fill = ensemble)) +
+p <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
   stat_boxplot(geom = "errorbar", width = 0.2, coef = 3,
                position = position_dodge(width = 0.8)) +
   geom_boxplot(coef = 3, position = position_dodge(width = 0.8)) +
@@ -1752,30 +1753,30 @@ simple_scatter_plot <- function(data, x, y, xpos = Inf, ypos = Inf,
 }
 
 # Omega and VPD
-simple_scatter_plot(Data_to_plot_II, VPD, ω)
+simple_scatter_plot(Data_to_plot$abs, VPD, ω)
 
 # Omega and P - ET
-simple_scatter_plot(Data_to_plot_II, P - ET, ω)
+simple_scatter_plot(Data_to_plot$abs, P - ET, ω)
 
 # Omega and PET / P
-simple_scatter_plot(Data_to_plot_II, PET / P, ω)
+simple_scatter_plot(Data_to_plot$abs, PET / P, ω)
 
 # Omega and LAI
-simple_scatter_plot(Data_to_plot_II, LAI, ω)
+simple_scatter_plot(Data_to_plot$abs, LAI, ω)
 
 # Omega and g_eff
-simple_scatter_plot(Data_to_plot_II, g_eff, ω,
+simple_scatter_plot(Data_to_plot$abs, g_eff, ω,
                     xpos = -Inf, ypos = Inf, hjust = -0.1, vjust = 2)
 
 # Omega^-1 and g_eff
-simple_scatter_plot(Data_to_plot_II, g_eff, 1 / ω)
+simple_scatter_plot(Data_to_plot$abs, g_eff, 1 / ω)
 
 # Omega and ET / PET
-simple_scatter_plot(Data_to_plot_II, ET / PET, ω,
+simple_scatter_plot(Data_to_plot$abs, ET / PET, ω,
                     xpos = -Inf, ypos = Inf, hjust = -0.1, vjust = 2)
 
 # ET / PET and VPD
-simple_scatter_plot(Data_to_plot_II, ET / PET, VPD)
+simple_scatter_plot(Data_to_plot$abs, ET / PET, VPD)
 
 
 #######################
@@ -1789,7 +1790,7 @@ Plot_labels <- tibble(
 )
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = ET / PET, y = n, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, robust_regression = TRUE,
@@ -2092,7 +2093,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_VPD_over_VPD, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_VPD_over_VPD"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2151,30 +2152,30 @@ ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
 #__________________________________________________________
 ###########################################################
 # Budyko curve components against VPD perturbation analysis
-##########################################################
+###########################################################
 #‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 
-Fit_ET_norm  <- lm(Data_to_plot$d_ET_over_ET~Data_to_plot$d_VPD_over_VPD)
-Fit_PET_norm <- lm(Data_to_plot$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$d_VPD_over_VPD)
-Fit_P_norm   <- lm(Data_to_plot$d_P_over_P~Data_to_plot$d_VPD_over_VPD)
-Fit_AI_norm  <- lm(Data_to_plot$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$d_VPD_over_VPD)
-Fit_EI_norm  <- lm(Data_to_plot$d_EI_over_EI~Data_to_plot$d_VPD_over_VPD)
+Fit_ET_norm  <- lm(Data_to_plot$diffs$d_ET_over_ET~Data_to_plot$diffs$d_VPD_over_VPD)
+Fit_PET_norm <- lm(Data_to_plot$diffs$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$diffs$d_VPD_over_VPD)
+Fit_P_norm   <- lm(Data_to_plot$diffs$d_P_over_P~Data_to_plot$diffs$d_VPD_over_VPD)
+Fit_AI_norm  <- lm(Data_to_plot$diffs$d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa~Data_to_plot$diffs$d_VPD_over_VPD)
+Fit_EI_norm  <- lm(Data_to_plot$diffs$d_EI_over_EI~Data_to_plot$diffs$d_VPD_over_VPD)
 
-plot(Data_to_plot_II$VPD, Data_to_plot_II$ET)
-plot(Data_to_plot_II$VPD, Data_to_plot_II$ETo_FAO56_alfalfa)
-plot(Data_to_plot_II$VPD, Data_to_plot_II$P)
-plot(Data_to_plot_II$VPD, Data_to_plot_II$AI_FAO56_alfalfa)
-plot(Data_to_plot_II$VPD, Data_to_plot_II$EI)
+plot(Data_to_plot$abs$VPD, Data_to_plot$abs$ET)
+plot(Data_to_plot$abs$VPD, Data_to_plot$abs$ETo_FAO56_alfalfa)
+plot(Data_to_plot$abs$VPD, Data_to_plot$abs$P)
+plot(Data_to_plot$abs$VPD, Data_to_plot$abs$AI_FAO56_alfalfa)
+plot(Data_to_plot$abs$VPD, Data_to_plot$abs$EI)
 
 # See the distribution of VPD
-ggplot(Data_to_plot_II |> 
+ggplot(Data_to_plot$abs |> 
          filter(!is.na(VPD)),  # remove missing VPD values
-       aes(x = VPD, fill = model, color = model)) +
+       aes(x = VPD, fill = ensemble, color = ensemble)) +
   geom_density(alpha = 0.3, adjust = 2) +
   facet_wrap(~ PERIOD, scales = "free") +
   theme_minimal(base_size = 14) +
   labs(
-    title = "Density plot of VPD across models and periods",
+    title = "Density plot of VPD across ensembles and periods",
     x = "Vapor Pressure Deficit (VPD)",
     y = "Density",
     fill = "Model",
@@ -2191,7 +2192,7 @@ Plot_labels <- tibble(
   color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2205,7 +2206,7 @@ ggsave('../plots/ggplot2/delta_AI_over_AI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 
 #######################
 # Normalized EI vs. VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_EI_over_EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_EI_over_EI"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2216,7 +2217,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_EI_over_EI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_EI_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Normalized PET vs. VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2227,7 +2228,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_PET_over_PET_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_PET_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Normalized P vs. VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -2238,7 +2239,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_P_over_P_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_P_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Normalized ET vs. VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -2261,7 +2262,7 @@ LM_eq_labels <- tibble(
   y = c(0.14, 0.09, 0.04)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_g_eff_over_g_eff, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_g_eff_over_g_eff"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2321,11 +2322,11 @@ ggsave("../plots/ggplot2/delta_AI,EI,PET,P,ET_norm_vs_delta_VPD_norm_ggplot2_TID
 #-------------------------------------------------------------------------------
 # Normalized EI vs. VPD check
 
-Data_to_plot_III <- Data_to_plot
-Data_to_plot_III <- Data_to_plot_III |> 
+tmp <- Data_to_plot$diffs
+tmp <- tmp |> 
   mutate(EI_1st_order_predict = d_ET_over_ET - d_P_over_P)
 
-make_scatter_plot(data = Data_to_plot_III |>
+make_scatter_plot(data = tmp |>
                     select(d_EI_over_EI, EI_1st_order_predict, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_EI_over_EI", y = "EI_1st_order_predict"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2335,11 +2336,11 @@ make_scatter_plot(data = Data_to_plot_III |>
 # Save the plot
 ggsave('../plots/ggplot2/delta_EI_over_EI_vs_delta_EI_over_EI_ggplot2_TIDY.png', plot = p_EI_EI_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-rm(Data_to_plot_III)
+rm(tmp)
 
 #####################################
 # Normalized AI_CO2 corrected vs. VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2357,7 +2358,7 @@ ggsave('../plots/ggplot2/delta_AI_CO2_corr_over_AI_vs_delta_VPD_over_VPD_ggplot2
 
 ###########
 # P vs. VPD
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     mutate(x = VPD, y = P, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
                     select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -2370,7 +2371,7 @@ ggsave('../plots/ggplot2/P_vs_VPD_ggplot2_TIDY.png', plot = p_P_VPD, width = Pl_
 
 ###########
 # ET vs. VPD
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     mutate(x = VPD, y = ET, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
                     select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE,
@@ -2384,7 +2385,7 @@ ggsave('../plots/ggplot2/ET_vs_VPD_ggplot2_TIDY.png', plot = p_ET_VPD, width = P
 
 ##############
 # geff vs. VPD
-VPD_g_eff_data <- Data_to_plot_II |> select(VPD, g_eff, PERIOD)
+VPD_g_eff_data <- Data_to_plot$abs |> select(VPD, g_eff, PERIOD)
 VPD_g_eff_data <- VPD_g_eff_data |>
   mutate(log_VPD = log(VPD),
          sqrt_VPD = 1/sqrt(VPD))
@@ -2550,7 +2551,7 @@ X_range <- plot_data$layout$panel_params[[1]]$x.range
 Y_range <- plot_data$layout$panel_params[[1]]$y.range
 
 # Build arrow start/end positions per (model, label) between the two periods
-arrow_data <- Data_to_plot_II  |> 
+arrow_data <- Data_to_plot$abs  |> 
   filter(PERIOD %in% c("1981_2005", "2076_2100"),
          !is.na(VPD), !is.na(ET)) |>
   mutate(PERIOD = factor(PERIOD, levels = c("1981_2005", "2076_2100"))) |>
@@ -2641,7 +2642,7 @@ Plot_labels <- tibble(
 )
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = 1/sqrt(VPD), y = g_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = FALSE, 
@@ -2730,7 +2731,7 @@ LM_eq_labels <- tibble(
 )
 
 make_scatter_plot(
-  data = Data_to_plot_II |>
+  data = Data_to_plot$abs |>
     mutate(x = 1/sqrt(VPD), y = g_eff, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = TRUE, LM_eq_labels = LM_eq_labels,
@@ -2743,7 +2744,7 @@ make_scatter_plot(
 
 ggsave('../plots/ggplot2/g_eff_versus_sqrt_VPD_ensemble_fit_ggplot2_TIDY.png', plot = p_geff_sqrt_VPD_ensemble_fit, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-FITS <- Data_to_plot_II |>
+FITS <- Data_to_plot$abs |>
   mutate(
     x = 1 / sqrt(VPD),
     y = g_eff,
@@ -2759,7 +2760,7 @@ FITS <- Data_to_plot_II |>
 
 
 # 2) Rebuild the data with x,y,model and join the coefs
-Data_with_pred <- Data_to_plot_II |> 
+Data_with_pred <- Data_to_plot$abs |> 
   mutate(
     x = 1/sqrt(VPD),
     y = g_eff,
@@ -2791,7 +2792,7 @@ ggsave('../plots/ggplot2/ET_predicted_vs_ET.png', plot = ET_predicted_vs_ET, wid
 
 ################################################################################
 # --- VPD grid (avoid 0 because 1/sqrt(0) = Inf) ---
-# If you want to match your data range: use range(Data_to_plot_II$VPD, na.rm = TRUE)
+# If you want to match your data range: use range(Data_to_plot$abs$VPD, na.rm = TRUE)
 VPD_grid <- tibble(VPD = seq(1e-4, 1, by = 0.001))
 
 # --- Physical constants (use your existing values/objects) ---
@@ -2879,7 +2880,7 @@ ggsave('../plots/ggplot2/g_eff_resids_and_Ta.png', plot = g_eff_resids_relations
 # Jarvis type model
 
 # Predicted geff vs. observed
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(ETo_FAO56_alfalfa, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "ETo_FAO56_alfalfa", y = "ET"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(352, 1648), Y_range_man = c(384, 816),
@@ -2890,18 +2891,18 @@ make_scatter_plot(data = Data_to_plot_II |>
 # Save the plot
 ggsave('../plots/ggplot2/ET_vs_PET.png', plot = ET_vs_PET, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-names(Data_to_plot_II)
+names(Data_to_plot$abs)
 
-Data_to_plot_II |>
+Data_to_plot$abs |>
   select(PET, ET) |>
   ggplot(aes(x = PET, y = ET)) +
   geom_point()
 
 
-plot(1/Data_to_plot_II$rs_eff * 1000, Data_to_plot_II$g_eff)
+plot(1/Data_to_plot$abs$rs_eff * 1000, Data_to_plot$abs$g_eff)
 
-g_eff_corr_test <- 1 / (rs_CO2(Data_to_plot_II$rs_eff)) * 1000
-g_eff_test <- Data_to_plot_II$g_eff
+g_eff_corr_test <- 1 / (rs_CO2(Data_to_plot$abs$rs_eff)) * 1000
+g_eff_test <- Data_to_plot$abs$g_eff
 
 Fit_test <- lm(g_eff_corr_test~g_eff_test -1)
 plot(g_eff_test, g_eff_corr_test)
@@ -2934,8 +2935,9 @@ ggsave('../plots/ggplot2/geff_corr_vs_geff.png', plot = test_plot, width = Pl_wi
 Fit_Jarvis <- FALSE
 if(Fit_Jarvis){
   source("./src/Jarvis_model_min_max.R")
+  list2env(jarvis_bundle, envir = .GlobalEnv)
 }else{
-  load("./RData/20250928_jarvis_objects.RData")
+  load("./RData/20250929_jarvis_objects.RData")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }
 source("./src/Jarvis_ALE_curves_smoothed_overlay.R")
@@ -3459,8 +3461,8 @@ part_2 <- jarvis_diffs |>
 
 merged <- bind_rows(part_1, part_2)
 
-# normalize keys (trim spaces) on both sides, keep only needed column from Data_to_plot_II
-dtp_join <- Data_to_plot_II |> 
+# normalize keys (trim spaces) on both sides, keep only needed column from Data_to_plot$abs
+dtp_join <- Data_to_plot$abs |> 
   mutate(across(c(PERIOD, ensemble, model), ~ str_squish(as.character(.)))) |> 
   select(PERIOD, ensemble, model, ETo_FAO56_alfalfa) |> 
   distinct()
@@ -3498,7 +3500,7 @@ plot(jarvis_diffs$VPD_fut, ET_future_no_fVPD)
 
 jarvis_diffs$ET_future_no_fVPD <- ET_future_no_fVPD
 
-test_data <- Data_to_plot_II |> filter(PERIOD == "2076_2100")
+test_data <- Data_to_plot$abs |> filter(PERIOD == "2076_2100")
 
 test_data_sorted <- test_data |> 
   arrange(ensemble, model)
@@ -3587,7 +3589,7 @@ ggsave('../plots/ggplot2/panel_fig_EI,AI,geff&VPD_TIDY.png', plot = panel_figure
 
 ############
 # P vs. VPD
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(VPD, P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "P"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3601,7 +3603,7 @@ ggsave('../plots/ggplot2/P_vs_VPD_ggplot2_TIDY.png', plot = p_P_VPD, width = Pl_
 
 ############
 # EI vs. VPD
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(VPD, EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "EI"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3673,7 +3675,7 @@ ggsave('../plots/ggplot2/EI_vs_VPD_ggplot2_TIDY.png', plot = p_EI_VPD, width = P
 
 #######################
 # EI vs. VPD arrow plot
-arrow_data <- Data_to_plot_II  |> 
+arrow_data <- Data_to_plot$abs  |> 
   filter(PERIOD %in% c("1981_2005", "2076_2100"),
          !is.na(VPD), !is.na(EI)) |>
   mutate(PERIOD = factor(PERIOD, levels = c("1981_2005", "2076_2100"))) |>
@@ -3722,19 +3724,19 @@ ggsave('../plots/ggplot2/EI_vs_VPD_arrow_ggplot2_TIDY.png', plot = p_EI_VPD_arro
 #-----------------------------------------------
 # Examining the scatter in g_eff to VPD relation
 
-Data_to_plot_II |> names()
+Data_to_plot$abs |> names()
 
-Data_to_plot_II <- Data_to_plot_II |> 
+Data_to_plot$abs <- Data_to_plot$abs |> 
   mutate(g_eff_predicted = coef(fit_sqrt)[1] + coef(fit_sqrt)[2] * 1 / sqrt(VPD))
 
-# Data_to_plot_II <- Data_to_plot_II |> 
+# Data_to_plot$abs <- Data_to_plot$abs |> 
 #   mutate(g_eff_predicted = coef(fit_log)[1] + coef(fit_log)[2] * log(VPD))
 
-# Data_to_plot_II <- Data_to_plot_II |> 
+# Data_to_plot$abs <- Data_to_plot$abs |> 
 #   mutate(g_eff_predicted = g_eff)
 
 # Predicted vs. original ET
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(g_eff, g_eff_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "g_eff", y = "g_eff_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3745,14 +3747,14 @@ make_scatter_plot(data = Data_to_plot_II |>
 # Save the plot
 ggsave('../plots/ggplot2/geff_predicted_vs_geff.png', plot = geff_predicted_vs_geff, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-Data_to_plot_II <- Data_to_plot_II |> 
+Data_to_plot$abs <- Data_to_plot$abs |> 
   mutate(ET_predicted = (rhoAir * CpAir / gamma) * VPD /
            (1 / (g_eff_predicted / 1000)) *                                       # Surface resistance
            1 / ((2.501 * (10^6) - 2361 * Ta) / (10^6)) * 3600*24 / 10^6 * 365.25  # From LE to annual ET
   )
 
 # Predicted vs. original ET
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(ET, ET_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "ET", y = "ET_predicted"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3765,12 +3767,12 @@ ggsave('../plots/ggplot2/ET_predicted_vs_ET.png', plot = ET_predicted_vs_ET, wid
 
 #--------------------
 # Check the residuals
-Data_to_plot_II <- Data_to_plot_II |> 
+Data_to_plot$abs <- Data_to_plot$abs |> 
   mutate(g_eff_resids = g_eff - g_eff_predicted)
 
-Data_to_plot_II |> pull(g_eff_resids) |> plot()
+Data_to_plot$abs |> pull(g_eff_resids) |> plot()
 
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(VPD, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3782,7 +3784,7 @@ make_scatter_plot(data = Data_to_plot_II |>
 ggsave('../plots/ggplot2/g_eff_resids_and_VPD.png', plot = g_eff_resids_relations, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Global radiation
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(Rg, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Rg", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3794,7 +3796,7 @@ make_scatter_plot(data = Data_to_plot_II |>
 ggsave('../plots/ggplot2/g_eff_resids_and_Rg.png', plot = g_eff_resids_relations, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Air temperature
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(Ta, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "Ta", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3806,7 +3808,7 @@ make_scatter_plot(data = Data_to_plot_II |>
 ggsave('../plots/ggplot2/g_eff_resids_and_Ta.png', plot = g_eff_resids_relations, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Precipitation
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(P, g_eff_resids, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "P", y = "g_eff_resids"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -3824,10 +3826,10 @@ keys <- c("PERIOD", "ensemble", "model")
 aesthetic_cols <- c("color", "fill", "border", "shape", "linetype")
 
 # 1) Normalize key types
-Data_to_plot_II <- Data_to_plot_II |> 
+Data_to_plot$abs <- Data_to_plot$abs |> 
   mutate(across(all_of(keys), as.character))
 
-Data_to_plot_right <- Data_to_plot |> 
+Data_to_plot_right <- Data_to_plot$diffs |> 
   mutate(PERIOD = "2076_2100") |>               # <- add the constant period
   mutate(across(all_of(keys), as.character)) |> 
   select(-any_of(aesthetic_cols)) |>            # avoid collisions with left-side aesthetics
@@ -3842,14 +3844,14 @@ if (nrow(dups)) {
 }
 
 # 3) Left-join: only matches 2076_2100 rows; others remain as-is
-merged_df <- Data_to_plot_II |> 
+merged_df <- Data_to_plot$abs |> 
   left_join(Data_to_plot_right, by = keys)
 
 # 4) Sanity checks
-stopifnot(nrow(merged_df) == nrow(Data_to_plot_II))
+stopifnot(nrow(merged_df) == nrow(Data_to_plot$abs))
 
 # Which (PERIOD, model, label) in the left didn’t match?
-unmatched <- Data_to_plot_II |> 
+unmatched <- Data_to_plot$abs |> 
   distinct(across(all_of(keys))) |> 
   anti_join(Data_to_plot_right |>  distinct(across(all_of(keys))), by = keys)
 if (nrow(unmatched)) {
@@ -4007,7 +4009,7 @@ ggsave('../plots/ggplot2/d_P_over_P_vs_Rg_over_Rg.png', plot = d_P_over_P_vs_Rg_
 
 ############
 # EI vs. VPD
-make_scatter_plot(data = Data_to_plot_II |>
+make_scatter_plot(data = Data_to_plot$abs |>
                     select(VPD, EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "EI"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
@@ -4080,7 +4082,7 @@ ggsave('../plots/ggplot2/EI_vs_VPD_ggplot2_TIDY.png', plot = p_EI_VPD, width = P
 ################################################################################
 
 # With normalized VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -4092,7 +4094,7 @@ ggsave('../plots/ggplot2/delta_ET_over_ET_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 
 
 # With normalized VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4106,7 +4108,7 @@ ggsave('../plots/ggplot2/delta_PET_over_PET_vs_delta_VPD_over_VPD_ggplot2_TIDY.p
 # Budyko curve components against VPD perturbation analysis
 
 # With normalized VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_EI_over_EI, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_EI_over_EI"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4118,7 +4120,7 @@ ggsave('../plots/ggplot2/delta_EI_over_EI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png
 
 
 # With normalized VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_FAO56_alfalfa_over_AI_FAO56_alfalfa"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4128,7 +4130,7 @@ make_scatter_plot(data = Data_to_plot |>
 # Save the plot
 ggsave('../plots/ggplot2/delta_AI_over_AI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_AI_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_AI_ETo_FAO56_alfalfa_GCM_CO2_corr_over_AI_ETo_FAO56_alfalfa_GCM_CO2_corr"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4139,12 +4141,12 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_AI_CO2_corr_over_AI_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_AI_CO2corr_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(dET_to_PET_ratio_over_ET_to_PET_ratio = (d_ET_over_ET - d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa) / 
            (1 + d_ETo_FAO56_alfalfa_over_ETo_FAO56_alfalfa))
 
 # With normalized VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, dET_to_PET_ratio_over_ET_to_PET_ratio, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "dET_to_PET_ratio_over_ET_to_PET_ratio"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4155,7 +4157,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_ET_to_PET_ratio_over_ET_to_PET_ratio_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_ET_over_PET_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD_over_VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD_over_VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -4166,7 +4168,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_P_over_P_vs_delta_VPD_over_VPD_ggplot2_TIDY.png', plot = p_P_VPD_norm, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # With absolute values of VPD
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -4177,7 +4179,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_ET_over_ET_vs_delta_VPD_ggplot2_TIDY.png', plot = p_ET_norm_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -4189,10 +4191,10 @@ ggsave('../plots/ggplot2/delta_P_over_P_vs_delta_VPD_ggplot2_TIDY.png', plot = p
 
 
 # With absolute values of VPD in the historical run
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(VPD = d_VPD / d_VPD_over_VPD)
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(VPD, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -4203,7 +4205,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_ET_over_ET_vs_VPD_historical_ggplot2_TIDY.png', plot = p_ET_norm_VPD_historical, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(VPD, d_P_over_P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "d_P_over_P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = Y_range_man,
@@ -4214,14 +4216,14 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/delta_P_over_P_vs_VPD_historical_ggplot2_TIDY.png', plot = p_P_norm_VPD_historical, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # With absolute values of VPD, ET and P in the historical run
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(VPD = d_VPD / d_VPD_over_VPD)
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(P = d_P / d_P_over_P)
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(ET = d_ET / d_ET_over_ET)
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(VPD, ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4231,7 +4233,7 @@ make_scatter_plot(data = Data_to_plot |>
 # Save the plot
 ggsave('../plots/ggplot2/ET_vs_VPD_historical_ggplot2_TIDY.png', plot = p_ET_VPD_historical, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(VPD, P, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD", y = "P"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4242,14 +4244,14 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/P_vs_VPD_historical_ggplot2_TIDY.png', plot = p_P_VPD_historical, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # With absolute values of VPD, ET and P in the RCP run
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(VPD_RCP = d_VPD + VPD)
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(P_RCP = d_P + P)
-Data_to_plot <- Data_to_plot |>
+Data_to_plot$diffs <- Data_to_plot$diffs |>
   mutate(ET_RCP = d_ET + ET)
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(VPD_RCP, ET_RCP, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD_RCP", y = "ET_RCP"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4260,7 +4262,7 @@ make_scatter_plot(data = Data_to_plot |>
 ggsave('../plots/ggplot2/ET_vs_VPD_RCP_ggplot2_TIDY.png', plot = p_ET_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(VPD_RCP, P_RCP, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "VPD_RCP", y = "P_RCP"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
@@ -4289,7 +4291,7 @@ plot(jarvis_diffs$Ta_hist, jarvis_diffs$Ta_fut)
 plot(jarvis_diffs$P_hist, jarvis_diffs$P_fut)
 plot(jarvis_diffs$ET_hist, jarvis_diffs$ET_fut)
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("EI"),
@@ -4303,7 +4305,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/EI_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_EI_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("EI", "VPD"),
@@ -4317,7 +4319,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_VPD_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("AI_FAO56_alfalfa"),
@@ -4331,7 +4333,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/AI_hist_vs_AI_RCP_ggplot2_TIDY.png', plot = p_AI_AI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ET", "ETo_FAO56_alfalfa"),
@@ -4347,7 +4349,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/ET2PET_hist_vs_ET2PET_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_ET2PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ETo_FAO56_alfalfa"),
@@ -4362,7 +4364,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/PET_hist_vs_PET_RCP_ggplot2_TIDY.png', plot = p_PET_hist_PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ETo_FAO56_alfalfa"),
@@ -4377,7 +4379,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/PET_hist_vs_delta_PET_ggplot2_TIDY.png', plot = p_PET_hist_delta_PET, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("P"),
@@ -4392,7 +4394,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/P_hist_vs_delta_P_ggplot2_TIDY.png', plot = p_P_hist_delta_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "P"),
@@ -4407,7 +4409,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_delta_P_ggplot2_TIDY.png', plot = p_VPD_hist_delta_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ET"),
@@ -4421,7 +4423,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/ET_hist_vs_ET_RCP_ggplot2_TIDY.png', plot = p_ET_ET_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("P"),
@@ -4435,7 +4437,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/P_hist_vs_P_RCP_ggplot2_TIDY.png', plot = p_P_P_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD"),
@@ -4449,7 +4451,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_VPD_RCP_ggplot2_TIDY.png', plot = p_VPD_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "ET"),
@@ -4463,7 +4465,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_ET_RCP_ggplot2_TIDY.png', plot = p_ET_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "AI_FAO56_alfalfa"),
@@ -4477,7 +4479,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_AI_RCP_ggplot2_TIDY.png', plot = p_AI_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "P"),
@@ -4491,7 +4493,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_P_RCP_ggplot2_TIDY.png', plot = p_P_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("g_eff"),
@@ -4505,7 +4507,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/g_eff_hist_vs_g_eff_RCP_ggplot2_TIDY.png', plot = p_g_eff_g_eff_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "g_eff"),
@@ -4519,7 +4521,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_g_eff_RCP_ggplot2_TIDY.png', plot = p_VPD_g_eff_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("Ta"),
@@ -4533,7 +4535,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
 # Save the plot
 ggsave('../plots/ggplot2/Ta_hist_vs_Ta_RCP_ggplot2_TIDY.png', plot = p_Ta_Ta_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("RH"),
@@ -4553,7 +4555,7 @@ LM_eq_labels <- tibble(
   x = rep(0.03, 6),
   y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
 )
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "Ta"),
@@ -4561,7 +4563,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
                     mutate(x = Ta_fut - Ta_hist, y = log(VPD_fut / VPD_hist), model = interaction(model, drop = TRUE)) |>
                     select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
-                  LM_eq_labels = LM_eq_labels, force_origin = TRUE,
+                  LM_eq_labels = LM_eq_labels, force_origin = FALSE,
                   x_lab = bquote(Delta*T["a"]~"(°C)"),  y_lab = bquote("ln(VPD/VPD)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_log_VPD_fut_VPD_hist_delta_Ta")
@@ -4572,7 +4574,7 @@ LM_eq_labels <- tibble(
   x = rep(0.03, 6),
   y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
 )
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("VPD", "Ta"),
@@ -4589,7 +4591,7 @@ ggsave('../plots/ggplot2/delta_VPD_norm_delta_Ta_ggplot2_TIDY.png', plot = p_del
 
 ################################################################################
 # Complementary relations
-make_scatter_plot(data = pair_periods(df   = Data_to_plot_II,
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
                                       vars = c("ET", "ETo_FAO56_alfalfa"),
@@ -4610,7 +4612,7 @@ LM_eq_labels <- tibble(
   y = rep(1, 6) - seq(from = 0.12, to = 0.5, length.out = 6)
 )
 
-make_scatter_plot(data = Data_to_plot |>
+make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_Ta, d_VPD_over_VPD, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_Ta", y = "d_VPD_over_VPD"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
