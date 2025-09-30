@@ -273,6 +273,13 @@ legend("topright", legend=c("Observed","Jarvis Pred"),
 
 par(op)
 
+
+plot(df0$AI_obs, df0$AI_hat)
+plot(df0$PET, df0$PET_hat)
+plot(df_out$ET_obs, df_out$ET_pred)
+plot(df_out$EI_obs, df_out$EI_pred)
+
+
 # ==========================================
 # AI–EI scatter/curve for OBSERVED pipeline
 # ==========================================
@@ -341,7 +348,7 @@ AI_peak  <- pred_df$AI_hat[i_peak]
 p_eff_vpd <- ggplot(geo, aes(VPD, eff_h)) +
   geom_line(linewidth = 1.2) +
   geom_vline(xintercept = vpd_peak, linetype = 2) +
-  scale_y_continuous(limits = c(0,1)) +
+  scale_y_continuous(limits = c(0.9,1)) +
   labs(title = "Horizontal efficiency vs VPD",
        subtitle = "eff = |dAI/dVPD| / sqrt((dAI/dVPD)^2 + (dEI/dVPD)^2)",
        x = "VPD (kPa)", y = "Horizontal efficiency [0–1]") +
