@@ -5093,3 +5093,75 @@ raw <- pair_periods(
   filter(is.finite(x), is.finite(y))
 
 cor(raw$x, raw$y, use = "complete.obs", method = "pearson")
+
+################################################################################
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = AI_FAO56_alfalfa, y = ET / ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("AI = PET / P"),  y_lab = bquote("ET / PET"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_AI")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_vs_AI_ggplot2_TIDY.png', plot = p_ET2PET_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = AI_FAO56_alfalfa, y = ET + ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("AI = PET / P"),  y_lab = bquote("ET + PET"~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_and_PET_AI")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET&PET_vs_AI_ggplot2_TIDY.png', plot = p_ET_and_PET_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = AI_FAO56_alfalfa, y = ET / (ET + ETo_FAO56_alfalfa), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("AI = PET / P"),  y_lab = bquote("ET / (ET + PET)"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2ET_and_PET_AI")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2ET&PET_vs_AI_ggplot2_TIDY.png', plot = p_ET2ET_and_PET_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = VPD, y = ET / ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("VPD (kPa)"),  y_lab = bquote("ET / PET"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_VPD")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_vs_VPD_ggplot2_TIDY.png', plot = p_ET2PET_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = P, y = ET / ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("P (mm yr"^"-1"*")"),  y_lab = bquote("ET / PET"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_P")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_vs_P_ggplot2_TIDY.png', plot = p_ET2PET_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = P, y = ET, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("P (mm yr"^"-1"*")"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_vs_P")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2_vs_P_ggplot2_TIDY.png', plot = p_ET_vs_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# What next
+# - determine what should be a reduction of rs in PM that would ensure that all models are following the same BC
+# - check in BC why the in the energy-limited region the gray line does not origin in zero-zero
