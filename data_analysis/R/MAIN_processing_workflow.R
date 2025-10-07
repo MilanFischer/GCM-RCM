@@ -1721,23 +1721,40 @@ Data_to_plot$abs <- Data_to_plot$abs |>
   relocate(PET, n, ω, .before = color)
 
 # Create the boxplot
-p <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
+# p <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
+#   stat_boxplot(geom = "errorbar", width = 0.2, coef = 3,
+#                position = position_dodge(width = 0.8)) +
+#   geom_boxplot(coef = 3, position = position_dodge(width = 0.8)) +
+#   scale_fill_manual(values = c(COL_CMIP5, COL_CMIP6, COL_RCMs)) +
+#   scale_y_log10(labels = function(x) format(x, scientific = FALSE)) +
+#   labs(y = "ω", x = "Period") +
+#   theme_bw() +
+#   theme(
+#     panel.grid = element_blank(),
+#     legend.position = c(0.95, 0.95),   # <- top-right corner
+#     legend.justification = c("right", "top"), # anchor legend box
+#     legend.background = element_rect(fill = "white", colour = "black") # optional box
+#   )
+
+
+p_omega_box <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
   stat_boxplot(geom = "errorbar", width = 0.2, coef = 3,
                position = position_dodge(width = 0.8)) +
   geom_boxplot(coef = 3, position = position_dodge(width = 0.8)) +
   scale_fill_manual(values = c(COL_CMIP5, COL_CMIP6, COL_RCMs)) +
   scale_y_log10(labels = function(x) format(x, scientific = FALSE)) +
-  labs(y = "ω", x = "Period") +
+  # relabel the x axis
+  scale_x_discrete(labels = c(`1981_2005` = "1981–2005",
+                              `2076_2100` = "2076–2100")) +
+  labs(y = "ω", x = NULL) +
   theme_bw() +
   theme(
     panel.grid = element_blank(),
-    legend.position = c(0.95, 0.95),   # <- top-right corner
-    legend.justification = c("right", "top"), # anchor legend box
-    legend.background = element_rect(fill = "white", colour = "black") # optional box
+    legend.position = "none"   # remove legend
   )
 
 # Save the plot to a file
-ggsave(filename = "../plots/ggplot2/ω_alpha_ggplot2_TIDY.png", plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = "mm")
+ggsave(filename = "../plots/ggplot2/ω_alpha_ggplot2_TIDY.png", plot = p_omega_box, width = Pl_width, height = Pl_height, dpi = RES, units = "mm")
 
 # Make a simple plot with linear regression and equation
 simple_scatter_plot <- function(data, x, y, xpos = Inf, ypos = Inf,
@@ -1835,6 +1852,107 @@ add_manual_legend <- function(p, x1 = 0.05, x2 = 0.09, y1 = 0.75, y2 = 0.70){
 p <- add_manual_legend(p, x1 = 0.05, x2 = 0.09, y1 = 0.75, y2 = 0.70)
 
 ggsave('../plots/ggplot2/ω_versus_ET_over_PET_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+###############
+# Omega and VPD
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = VPD, y = n + 0.72, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("VPD (kPa)"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_VPD_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+p_omega_box <- p_omega_box +
+  theme(
+    panel.background = element_rect(fill = NA, colour = NA),  # panel area transparent
+    plot.background  = element_rect(fill = NA, colour = NA)   # outer background transparent
+  )
+
+
+# Shrink text size in geom_text_repel and annotate("text")
+p_omega_box <- resize_plot_elements(
+  p_omega_box,
+  repel_size = 1,
+  text_size  = 3
+)
+
+# Combining plots
+combined_plot <- p + 
+  inset_element(
+    p_omega_box,
+    left   = 0.3,  # relative x-position (0–1)
+    bottom = 0.35,  # relative y-position (0–1)
+    right  = 1.0,  # relative width (0–1)
+    top    = 1.0   # relative height (0–1)
+  )
+
+ggsave('../plots/ggplot2/ω_versus_VPD_and_omega_boxplot_ggplot2_TIDY.png', plot = combined_plot, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+omega_versus_VPD_and_omega_boxplot <- combined_plot
+
+################
+# Omega and geff
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = g_eff, y = (n + 0.72), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("g"["eff"]~"(mm s"^"-1"*")"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_g_eff_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+##################
+# Omega and ET/PET
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = ET / ETo_FAO56_alfalfa, y = (n + 0.72), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("ET / PET"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_ET_PET_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#################
+# Omega and PET/P
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = ETo_FAO56_alfalfa / P, y = (n + 0.72), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("AI = PET / P"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_AI_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#-------------------------------------------------------------------------------
+# Remove ERA5 land
+annual_stats_wide <- annual_stats_wide |>
+  filter(ENSEMBLE != "ERA5")
 
 # ------------------
 # Plot Budyko curves
@@ -5011,6 +5129,22 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
 # Save the plot
 ggsave('../plots/ggplot2/p_ET_P_PET_hist_vs_ET_P_PET_fut_ggplot2_TIDY.png', plot = p_ET_P_PET_hist_ET_P_PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+# Delta n over n vs. Delta VPD over VPD
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "n"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = (VPD_fut - VPD_hist) / VPD_hist,
+                           y = (n_fut + 0.72 - (n_hist + 0.72)) / (n_hist + 0.72), model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(Delta*"VPD / VPD"),  y_lab = bquote(Delta*omega~"/"~omega),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="d_omega_over_omega_vs_d_VPD_over_VPD")
+
+# Save the plot
+ggsave('../plots/ggplot2/d_omega_over_omega_vs_d_VPD_over_VPD_ggplot2_TIDY.png', plot = d_omega_over_omega_vs_d_VPD_over_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 LM_eq_labels <- tibble(
   x = rep(0.03, 6),
@@ -5162,6 +5296,146 @@ make_scatter_plot(data = Data_to_plot$abs |>
 # Save the plot
 ggsave('../plots/ggplot2/ET2_vs_P_ggplot2_TIDY.png', plot = p_ET_vs_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+#-------------------------------------------------------------------------------
+# Fit one Budyko curve
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = ETo_FAO56_alfalfa / P, y = ET / P, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("AI = PET/P"),  
+  y_lab = bquote("EI = ET/P"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  plot_labels = Plot_labels,
+  save_ggplot2_obj_as="p"
+)
+
+BC_general <- Data_to_plot$abs |> 
+  filter(!is.na(ETo_FAO56_alfalfa), !is.na(ET), !is.na(P)) |> 
+  summarise(
+    n = Budyko_curve_optim(ETo_FAO56_alfalfa, ET, P),
+    ω = n + 0.72
+  )
+
+n_scalar <- pull(BC_general, n)
+
+pb <- ggplot_build(p)
+pp <- pb$layout$panel_params[[1]]
+xr <- if (!is.null(pp$x.range)) pp$x.range else pp$x$range
+yr <- if (!is.null(pp$y.range)) pp$y.range else pp$y$range
+
+# draw the curve over the full x-range
+p <- p +
+  stat_function(
+    fun  = function(x) 1 / (1 + (1 / x)^n_scalar)^(1 / n_scalar),
+    xlim = xr,
+    inherit.aes = FALSE,
+    linewidth = 1,
+    color = "grey40"
+  ) +
+  coord_cartesian(xlim = xr, ylim = yr) +
+  scale_x_continuous(expand = expansion(mult = 0)) +
+  scale_y_continuous(expand = expansion(mult = 0))
+
+
+source("./src/delta_derivations.R")
+
+p <- p +
+  geom_line(
+    data = pred_df |> arrange(AI_hat),
+    mapping = aes(x = AI_hat, y = EI_hat_J),  # mapping, not data
+    linetype = "dashed",
+    linewidth = 1,
+    inherit.aes = FALSE
+  )
+
+idx_pts_txt <- which(vapply(p$layers,
+                            function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                            logical(1)))
+
+# Move them to the end so they draw last (on top of lines etc.)
+if (length(idx_pts_txt)) {
+  p$layers <- c(p$layers[-idx_pts_txt], p$layers[idx_pts_txt])
+}
+
+p <- add_manual_legend(p, x1 = 0.59, x2 = 0.64, y1 = 0.10, y2 = 0.05)
+
+ggsave('../plots/ggplot2/BC_general_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+p_BC <- p
+
+#-------------------------------------------------------------------------------
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = VPD,
+           y = (ET / P) - (1 / (1 + (1 / (ETo_FAO56_alfalfa / P))^n_scalar)^(1 / n_scalar)), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("VPD"),  
+  y_lab = bquote("EI – EI"[omega]),
+  hline = TRUE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/EI_resids_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+p_EI_resids <- p
+#-------------------------------------------------------------------------------
+
+#--------------
+# Combined plot
+
+# Optional but helps: tiny, identical plot margins
+tight <- theme(plot.margin = margin(3,3,3,3))
+pA <- p_BC + tight
+pB <- p_EI_resids + tight
+pC <- omega_versus_VPD_and_omega_boxplot + tight
+pD <- d_omega_over_omega_vs_d_VPD_over_VPD   + tight
+
+
+# (2) Align *all five* first; keep all four sides ('tblr')
+aligned <- cowplot::align_plots(pA, pB, pC, pD, align = "hv", axis = "tblr")
+
+# (3) Build rows from the aligned grobs
+# --- top row with spacing between A and B ---
+top <- cowplot::plot_grid(
+  aligned[[1]], NULL, aligned[[2]],
+  ncol = 3,
+  rel_widths = c(1, 0.05, 1),
+  labels = c("a)", "", "b)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# --- bottom row with spacing between C, D ---
+bottom <- cowplot::plot_grid(
+  aligned[[3]], NULL, aligned[[4]],
+  ncol = 3,
+  rel_widths = c(1, 0.05, 1),
+  labels = c("c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = -0.1
+)
+
+# --- add vertical spacing between top and bottom ---
+combined <- cowplot::plot_grid(
+  NULL, top, NULL, bottom,
+  ncol = 1,
+  rel_heights = c(0.1, 3, 0.1, 3)  # the middle '0.1' is vertical gap
+)
+
+# (5) Save (use any size you like; e.g. 240×200 mm fits a 3:2 row split nicely)
+ggsave("../plots/ggplot2/combined_BC,EI,omega_ggplot2_TIDY.png", combined,
+       width = 240, height = 240, units = "mm", dpi = RES, bg = "white")
+
+#-------------------------------------------------------------------------------
+
 # What next
+# - can be BC with unchanged omega considered water-limited only and what is above is the effect of VPD
+# - what if one single omega is fitted and the difference is in ET or EI are analysed in repsonse to VPD?
 # - determine what should be a reduction of rs in PM that would ensure that all models are following the same BC
 # - check in BC why the in the energy-limited region the gray line does not origin in zero-zero
