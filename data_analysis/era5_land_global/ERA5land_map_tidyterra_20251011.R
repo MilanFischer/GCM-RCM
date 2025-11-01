@@ -475,3 +475,17 @@ final_plot <- cowplot::plot_grid(region_map, legend_row, ncol = 1,
                                  rel_heights = c(1, 0.12))
 
 ggsave("AI_global.png", plot = final_plot, width = 10, height = 6, dpi = 600, bg = "white")
+
+
+# ------------------------------------------------------------------------------
+AI_val <- values(AI)
+VPD_val <- values(VPD_ann)
+
+AI_val_s <- AI_val[VPD_val<1.5]
+VPD_val_s <- VPD_val[VPD_val<1.5]
+plot(VPD_val_s, AI_val_s)
+
+Fit <- lm(AI_val_s ~ VPD_val_s)
+abline(Fit, col = "red")
+
+vpd_thresh * coef(Fit)[2] + coef(Fit)[1]

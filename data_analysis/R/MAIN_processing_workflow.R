@@ -1958,7 +1958,8 @@ Data_RH  <- summarize_var(annual_stats_wide, "RH")
 Data_VPD <- summarize_var(annual_stats_wide, "VPD")
 
 ## --- panel a (map) ---
-map_image <- image_read("../elevation_map/plots/Elevation_and_domain_map_r-6_v-01_DPI-300.png")
+# map_image <- image_read("../elevation_map/plots/Elevation_and_domain_map_r-6_v-01_DPI-300.png")
+map_image <- image_read("../era5_land_global/plots/VPD_Europe_r-6_v-01_DPI-1200.png")
 crop_image_by_percentage <- function(image, left_percent, right_percent, top_percent, bottom_percent) {
   info <- image_info(image); w <- info$width; h <- info$height
   left <- round((left_percent/100) * w);  right <- round((right_percent/100) * w)
@@ -1966,7 +1967,8 @@ crop_image_by_percentage <- function(image, left_percent, right_percent, top_per
   cw <- w - left - right; ch <- h - top - bottom
   image_crop(image, geometry = paste0(cw, "x", ch, "+", left, "+", top))
 }
-panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
+# panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
+panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.55) |> # left_percent, right_percent, top_percent, bottom_percent
   grDevices::as.raster() |> rasterGrob(interpolate = TRUE) |>
   label_panel("a)", col = "#333333") |>
   add_tb_padding(top = 0.02, bottom = 0.005)
@@ -2078,7 +2080,6 @@ Budyko_plot <- Budyko_plot +
 
 # Save the plot
 ggsave('../plots/ggplot2/Budyko_curve_ggplot2.png', plot = Budyko_plot, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-
 # <<----------------- End of the Budyko curve   ------------------------------>>
 
 
@@ -2148,9 +2149,15 @@ bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(
 final_figure <- grid.arrange(top_block, bottom_block, ncol = 1, heights = c(1, 0.8))
 
 grid.newpage(); grid.draw(final_figure)
-ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
+# ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
+#        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
+#        dpi = RES, units = "mm")
+
+ggsave("../plots/ggplot2/Domain_VPD_water_balance&atmosphere.png",
        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
-       dpi = RES, units = "mm")
+       # dpi = RES, units = "mm")
+       dpi = 1200, units = "mm")
+
 
 #__________________________________________________________
 ###########################################################
