@@ -92,8 +92,9 @@ AP <- 97.73785 # From ERA5-land for the domain in 1981–2005
 # lambda <- (2.501 * (10^6) - 2361 *  8.033441) / (10^6)
 # gamma <- CpAir*AP/(0.622*lambda*10^6)
 
-# Based on the "SUPPLEMENT_DataTables_Meinshausen_6May2020.xlsx"
-CO2_2076_2100_RCP85 <- 979.42 # ppm
+# Based on the "SUPPLEMENT_DataTables_Meinshausen_6May2020.xlsx" for the CMIP6
+CO2_2076_2100_RCP85 <- 979.42 # ppm, 972.28 ppm for whole world, 979.42 for northern hemisphere
+# CO2_2076_2100_RCP85 <- 828.38 # CMIP5, https://tntcat.iiasa.ac.at/RcpDb/dsd?Action=htmlpage&page=download
 CO2_1981_2005 <- 359.47
 
 # dgs/gs predicted based on optimality theory
@@ -2084,7 +2085,8 @@ Data_RH  <- summarize_var(annual_stats_wide, "RH")
 Data_VPD <- summarize_var(annual_stats_wide, "VPD")
 
 ## --- panel a (map) ---
-map_image <- image_read("../elevation_map/plots/Elevation_and_domain_map_r-6_v-01_DPI-300.png")
+# map_image <- image_read("../elevation_map/plots/Elevation_and_domain_map_r-6_v-01_DPI-300.png")
+map_image <- image_read("../era5_land_global/plots/VPD_Europe_r-6_v-01_DPI-1200.png")
 crop_image_by_percentage <- function(image, left_percent, right_percent, top_percent, bottom_percent) {
   info <- image_info(image); w <- info$width; h <- info$height
   left <- round((left_percent/100) * w);  right <- round((right_percent/100) * w)
@@ -2092,7 +2094,8 @@ crop_image_by_percentage <- function(image, left_percent, right_percent, top_per
   cw <- w - left - right; ch <- h - top - bottom
   image_crop(image, geometry = paste0(cw, "x", ch, "+", left, "+", top))
 }
-panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
+# panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
+panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.55) |> # left_percent, right_percent, top_percent, bottom_percent
   grDevices::as.raster() |> rasterGrob(interpolate = TRUE) |>
   label_panel("a)", col = "#333333") |>
   add_tb_padding(top = 0.02, bottom = 0.005)
@@ -2274,9 +2277,11 @@ bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(
 final_figure <- grid.arrange(top_block, bottom_block, ncol = 1, heights = c(1, 0.8))
 
 grid.newpage(); grid.draw(final_figure)
-ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
+# ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
+ggsave("../plots/ggplot2/Domain_VPD_water_balance&atmosphere.png",
        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
-       dpi = RES, units = "mm")
+       # dpi = RES, units = "mm")
+       dpi = 1200, units = "mm")
 
 #__________________________________________________________
 ###########################################################
