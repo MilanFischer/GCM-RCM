@@ -93,8 +93,11 @@ AP <- 97.73785 # From ERA5-land for the domain in 1981–2005
 # gamma <- CpAir*AP/(0.622*lambda*10^6)
 
 # Based on the "SUPPLEMENT_DataTables_Meinshausen_6May2020.xlsx"
-CO2_2076_2100_RCP85 <- 979.42 # ppm
+CO2_2076_2100_RCP85 <- 979.42 # ppm, 972.28 ppm for whole world, 979.42 for northern hemisphere
 CO2_1981_2005 <- 359.47
+
+# CO2_2076_2100_RCP85 <- 828.38 # CMIP5, https://tntcat.iiasa.ac.at/RcpDb/dsd?Action=htmlpage&page=download
+
 
 # dgs/gs predicted based on optimality theory
 # 0.7–0.9
