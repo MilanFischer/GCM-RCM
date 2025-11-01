@@ -93,11 +93,8 @@ AP <- 97.73785 # From ERA5-land for the domain in 1981–2005
 # gamma <- CpAir*AP/(0.622*lambda*10^6)
 
 # Based on the "SUPPLEMENT_DataTables_Meinshausen_6May2020.xlsx"
-CO2_2076_2100_RCP85 <- 979.42 # ppm, 972.28 ppm for whole world, 979.42 for northern hemisphere
+CO2_2076_2100_RCP85 <- 979.42 # ppm
 CO2_1981_2005 <- 359.47
-
-# CO2_2076_2100_RCP85 <- 828.38 # CMIP5, https://tntcat.iiasa.ac.at/RcpDb/dsd?Action=htmlpage&page=download
-
 
 # dgs/gs predicted based on optimality theory
 # 0.7–0.9
@@ -255,19 +252,19 @@ Data_wide <- Data |>
     RO = P - ET
   )
 
-vpd_mean_by_ensemble <- Data_wide |> 
-  filter(PERIOD == "1981_2005") |> 
-  group_by(ENSEMBLE) |> 
+vpd_mean_by_ensemble <- Data_wide |>
+  filter(PERIOD == "1981_2005") |>
+  group_by(ENSEMBLE) |>
   summarise(mean_VPD = mean(VPD, na.rm = TRUE), .groups = "drop")
 
 vpd_mean_by_ensemble
-
-# Now drop ERA5
-Data <- Data |> 
-  filter(ENSEMBLE != "ERA5")
-
-Data_wide <- Data_wide |> 
-  filter(ENSEMBLE != "ERA5")
+# 
+# # Now drop ERA5
+# Data <- Data |> 
+#   filter(ENSEMBLE != "ERA5")
+# 
+# Data_wide <- Data_wide |> 
+#   filter(ENSEMBLE != "ERA5")
 
 # --- helper to fit slope-only lm(y ~ x - 1) per ENSEMBLE using lm ---
 fit_slope_per_ensemble <- function(df, x, y, slope_name) {
@@ -285,6 +282,11 @@ fit_slope_per_ensemble <- function(df, x, y, slope_name) {
 # Fit the slopes using linear regression
 slopes_vpd   <- fit_slope_per_ensemble(Data_wide, "VPD",  "VPD_d",   "slope_vpd")
 slopes_delta <- fit_slope_per_ensemble(Data_wide, "SVP", "delta_d", "slope_delta")
+
+slopes_vpd <- slopes_vpd |>
+  add_row(ENSEMBLE = "ERA5", slope_vpd = 1.16)
+slopes_delta <- slopes_delta |>
+  add_row(ENSEMBLE = "ERA5", slope_delta = 1.01)
 
 # --- Join and fill both variables ---
 Data_wide <- Data_wide |>
@@ -380,12 +382,12 @@ Data_wide <- Data_wide |>
   ) |> 
   ungroup()
 
-# Remove ERA5 land 
-Data_wide <- Data_wide |> 
-  filter(MODEL != "ERA5")
+# # Remove ERA5 land 
+# Data_wide <- Data_wide |> 
+#   filter(MODEL != "ERA5")
 
 # Create the boxplot
-p <- ggplot(Data_wide, aes(x = ENSEMBLE, y = max_ET_ratio, fill = ENSEMBLE)) +
+p <- ggplot(Data_wide |> filter(ENSEMBLE != "ERA5"), aes(x = ENSEMBLE, y = max_ET_ratio, fill = ENSEMBLE)) +
   stat_boxplot(geom = "errorbar", # Error bars
                width = 0.2, coef = 3) +    # Bars width
   geom_boxplot(coef = 3) +
@@ -444,7 +446,8 @@ mean_values <- annual_stats |>
   )
 
 # Visualize mean values using a bar plot
-p <- mean_values |> 
+p <- mean_values |>
+  filter(ENSEMBLE != "ERA5") |> 
   ggplot(aes(x = PERIOD, y = mean_value, fill = ENSEMBLE)) +
   geom_bar(stat = "identity", position = "dodge") +
   facet_wrap(~ VAR, scales = "free_y") +
@@ -506,7 +509,7 @@ annual_stats <- bind_rows(
                           AI_FAO56_alfalfa, AI_ETo_FAO56_alfalfa_GCM_CO2_corr,
                           EI, ET_over_ETo_FAO56_alfalfa, ET_over_ETo_FAO56_alfalfa_GCM_CO2_corr),
                  names_to = "VAR", values_to = "annual_stat")
-  )
+)
 
 # Fit a linear model
 fit <- lm(ETo_FAO56_alfalfa ~ ETo_FAO56_grass, data = annual_stats_wide)
@@ -538,6 +541,9 @@ annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> pull(ET_diff) |
 annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> pull(ET_diff) |> min()
 annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> filter(ET_diff < 0)
 
+annual_stats_wide |> filter(ENSEMBLE == "ERA5") |> View()
+
+annual_stats_wide |> filter(ENSEMBLE == "ERA5") |> select(VPD, EI, AI_FAO56_alfalfa) |> View()
 
 # Calculate the normalized difference between periods
 norm_diff <- annual_stats |>
@@ -594,6 +600,7 @@ Data_to_plot[["diffs"]] <- all_diff |>
     shape = 21,
     linetype = "solid"
   ) |>
+  filter(ENSEMBLE != "ERA5") |> 
   rename(ensemble = ENSEMBLE, model = MODEL)
 
 # --------------
@@ -1061,6 +1068,7 @@ Data_to_plot[["abs"]] <- annual_stats |>
     ),
     linetype = "solid"
   ) |>
+  filter(ENSEMBLE != "ERA5") |> 
   rename(ensemble = ENSEMBLE, model = MODEL)
 
 attributes(Data_to_plot$abs)
@@ -1713,23 +1721,40 @@ Data_to_plot$abs <- Data_to_plot$abs |>
   relocate(PET, n, ω, .before = color)
 
 # Create the boxplot
-p <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
+# p <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
+#   stat_boxplot(geom = "errorbar", width = 0.2, coef = 3,
+#                position = position_dodge(width = 0.8)) +
+#   geom_boxplot(coef = 3, position = position_dodge(width = 0.8)) +
+#   scale_fill_manual(values = c(COL_CMIP5, COL_CMIP6, COL_RCMs)) +
+#   scale_y_log10(labels = function(x) format(x, scientific = FALSE)) +
+#   labs(y = "ω", x = "Period") +
+#   theme_bw() +
+#   theme(
+#     panel.grid = element_blank(),
+#     legend.position = c(0.95, 0.95),   # <- top-right corner
+#     legend.justification = c("right", "top"), # anchor legend box
+#     legend.background = element_rect(fill = "white", colour = "black") # optional box
+#   )
+
+
+p_omega_box <- ggplot(Data_to_plot$abs, aes(x = PERIOD, y = ω, fill = ensemble)) +
   stat_boxplot(geom = "errorbar", width = 0.2, coef = 3,
                position = position_dodge(width = 0.8)) +
   geom_boxplot(coef = 3, position = position_dodge(width = 0.8)) +
   scale_fill_manual(values = c(COL_CMIP5, COL_CMIP6, COL_RCMs)) +
   scale_y_log10(labels = function(x) format(x, scientific = FALSE)) +
-  labs(y = "ω", x = "Period") +
+  # relabel the x axis
+  scale_x_discrete(labels = c(`1981_2005` = "1981–2005",
+                              `2076_2100` = "2076–2100")) +
+  labs(y = "ω", x = NULL) +
   theme_bw() +
   theme(
     panel.grid = element_blank(),
-    legend.position = c(0.95, 0.95),   # <- top-right corner
-    legend.justification = c("right", "top"), # anchor legend box
-    legend.background = element_rect(fill = "white", colour = "black") # optional box
+    legend.position = "none"   # remove legend
   )
 
 # Save the plot to a file
-ggsave(filename = "../plots/ggplot2/ω_alpha_ggplot2_TIDY.png", plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = "mm")
+ggsave(filename = "../plots/ggplot2/ω_alpha_ggplot2_TIDY.png", plot = p_omega_box, width = Pl_width, height = Pl_height, dpi = RES, units = "mm")
 
 # Make a simple plot with linear regression and equation
 simple_scatter_plot <- function(data, x, y, xpos = Inf, ypos = Inf,
@@ -1828,19 +1853,120 @@ p <- add_manual_legend(p, x1 = 0.05, x2 = 0.09, y1 = 0.75, y2 = 0.70)
 
 ggsave('../plots/ggplot2/ω_versus_ET_over_PET_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+###############
+# Omega and VPD
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = VPD, y = n + 0.72, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("VPD (kPa)"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_VPD_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+p_omega_box <- p_omega_box +
+  theme(
+    panel.background = element_rect(fill = NA, colour = NA),  # panel area transparent
+    plot.background  = element_rect(fill = NA, colour = NA)   # outer background transparent
+  )
+
+
+# Shrink text size in geom_text_repel and annotate("text")
+p_omega_box <- resize_plot_elements(
+  p_omega_box,
+  repel_size = 1,
+  text_size  = 3
+)
+
+# Combining plots
+combined_plot <- p + 
+  inset_element(
+    p_omega_box,
+    left   = 0.3,  # relative x-position (0–1)
+    bottom = 0.35,  # relative y-position (0–1)
+    right  = 1.0,  # relative width (0–1)
+    top    = 1.0   # relative height (0–1)
+  )
+
+ggsave('../plots/ggplot2/ω_versus_VPD_and_omega_boxplot_ggplot2_TIDY.png', plot = combined_plot, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+omega_versus_VPD_and_omega_boxplot <- combined_plot
+
+################
+# Omega and geff
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = g_eff, y = (n + 0.72), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("g"["eff"]~"(mm s"^"-1"*")"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_g_eff_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+##################
+# Omega and ET/PET
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = ET / ETo_FAO56_alfalfa, y = (n + 0.72), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("ET / PET"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_ET_PET_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#################
+# Omega and PET/P
+
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = ETo_FAO56_alfalfa / P, y = (n + 0.72), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("AI = PET / P"),  
+  y_lab = bquote("ω"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/ω_versus_AI_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#-------------------------------------------------------------------------------
+# Remove ERA5 land
+annual_stats_wide <- annual_stats_wide |>
+  filter(ENSEMBLE != "ERA5")
+
 # ------------------
 # Plot Budyko curves
 out_BC_FAO56_alfalfa <- Budyko_curve(annual_stats_wide,
-             pet_col = "ETo_FAO56_alfalfa", et_col = "ET", p_col = "P",
-             X_range = c(0.0, 2.2), Y_range = c(0.0, 1.06),
-             Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
-             plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ggplot2.png")
+                                     pet_col = "ETo_FAO56_alfalfa", et_col = "ET", p_col = "P",
+                                     X_range = c(0.0, 2.2), Y_range = c(0.0, 1.06),
+                                     Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
+                                     plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ggplot2.png")
 
 out_BC_FAO56_alfalfa_CO2_corr <- Budyko_curve(annual_stats_wide,
-             pet_col = "ETo_FAO56_alfalfa_GCM_CO2_corr", et_col = "ET", p_col = "P",
-             X_range = c(0.0, 2.2), Y_range = c(0.0, 1.06),
-             Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
-             plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_CO2_ggplot2.png")
+                                              pet_col = "ETo_FAO56_alfalfa_GCM_CO2_corr", et_col = "ET", p_col = "P",
+                                              X_range = c(0.0, 2.2), Y_range = c(0.0, 1.06),
+                                              Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
+                                              plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_CO2_ggplot2.png")
 
 # Add label "a)" to the first plot
 p9 <- out_BC_FAO56_alfalfa$out_plot + 
@@ -1958,8 +2084,7 @@ Data_RH  <- summarize_var(annual_stats_wide, "RH")
 Data_VPD <- summarize_var(annual_stats_wide, "VPD")
 
 ## --- panel a (map) ---
-# map_image <- image_read("../elevation_map/plots/Elevation_and_domain_map_r-6_v-01_DPI-300.png")
-map_image <- image_read("../era5_land_global/plots/VPD_Europe_r-6_v-01_DPI-1200.png")
+map_image <- image_read("../elevation_map/plots/Elevation_and_domain_map_r-6_v-01_DPI-300.png")
 crop_image_by_percentage <- function(image, left_percent, right_percent, top_percent, bottom_percent) {
   info <- image_info(image); w <- info$width; h <- info$height
   left <- round((left_percent/100) * w);  right <- round((right_percent/100) * w)
@@ -1967,8 +2092,7 @@ crop_image_by_percentage <- function(image, left_percent, right_percent, top_per
   cw <- w - left - right; ch <- h - top - bottom
   image_crop(image, geometry = paste0(cw, "x", ch, "+", left, "+", top))
 }
-# panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
-panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.55) |> # left_percent, right_percent, top_percent, bottom_percent
+panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
   grDevices::as.raster() |> rasterGrob(interpolate = TRUE) |>
   label_panel("a)", col = "#333333") |>
   add_tb_padding(top = 0.02, bottom = 0.005)
@@ -2059,7 +2183,7 @@ Budyko_plot <- Budyko_plot +
            y = rescale(0.9, Y_range),
            label = bquote(bold("Energy") ~ italic("vs.") ~ bold("Water")~"limitation"),
            hjust = 0, color = "#333333", size = 4) +
-
+  
   # Left-pointing arrow above "Energy"
   annotate("segment",
            x = rescale(0.42, X_range),  # adjust to match text
@@ -2068,7 +2192,7 @@ Budyko_plot <- Budyko_plot +
            yend = rescale(0.95, Y_range),
            arrow = arrow(type = "closed", length = unit(0.2, "cm")),
            color = "#333333") +
-
+  
   # Right-pointing arrow above "water"
   annotate("segment",
            x = rescale(0.51, X_range),
@@ -2080,6 +2204,7 @@ Budyko_plot <- Budyko_plot +
 
 # Save the plot
 ggsave('../plots/ggplot2/Budyko_curve_ggplot2.png', plot = Budyko_plot, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
 # <<----------------- End of the Budyko curve   ------------------------------>>
 
 
@@ -2149,15 +2274,9 @@ bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(
 final_figure <- grid.arrange(top_block, bottom_block, ncol = 1, heights = c(1, 0.8))
 
 grid.newpage(); grid.draw(final_figure)
-# ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
-#        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
-#        dpi = RES, units = "mm")
-
-ggsave("../plots/ggplot2/Domain_VPD_water_balance&atmosphere.png",
+ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
-       # dpi = RES, units = "mm")
-       dpi = 1200, units = "mm")
-
+       dpi = RES, units = "mm")
 
 #__________________________________________________________
 ###########################################################
@@ -3339,8 +3458,8 @@ plot(jarvis_diffs$dVPD_norm,
 
 # It is equivalent because temperature dependence is considered for unit conversion
 points(jarvis_diffs$dVPD_norm,
-     with(jarvis_diffs, dET_norm_from_VPD_g_eff_Ta),
-     col = "red", pch = 3, cex = 0.8)
+       with(jarvis_diffs, dET_norm_from_VPD_g_eff_Ta),
+       col = "red", pch = 3, cex = 0.8)
 
 # If you ignore the temperature dependence, there is more but maybe insignificant scatter
 points(jarvis_diffs$dVPD_norm,
@@ -3484,13 +3603,13 @@ merged <- merged |>
 
 
 out_BC_FAO56_alfalfa_ET_semipredicted <- Budyko_curve(merged,
-                                                  pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted_from_TO_and_hist", p_col = "P",
-                                                  X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
-                                                  Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
-                                                  boundary_line_col = "gray45",
-                                                  boundary_line_type = "solid",
-                                                  boundary_line_size = 0.2,
-                                                  plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ET_semipredicted_ggplot2.png")
+                                                      pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted_from_TO_and_hist", p_col = "P",
+                                                      X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
+                                                      Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
+                                                      boundary_line_col = "gray45",
+                                                      boundary_line_type = "solid",
+                                                      boundary_line_size = 0.2,
+                                                      plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ET_semipredicted_ggplot2.png")
 
 ################################################################################
 # Now remove fVPD
@@ -3565,13 +3684,13 @@ part_join <- part_1 |>
 View(part_join)
 
 out_BC_FAO56_alfalfa_ET_predicted <- Budyko_curve(part_join,
-                                     pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted", p_col = "P.x",
-                                     X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
-                                     Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
-                                     boundary_line_col = "gray45",
-                                     boundary_line_type = "solid",
-                                     boundary_line_size = 0.2,
-                                     plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ET_predicted_ggplot2.png")
+                                                  pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted", p_col = "P.x",
+                                                  X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
+                                                  Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
+                                                  boundary_line_col = "gray45",
+                                                  boundary_line_type = "solid",
+                                                  boundary_line_size = 0.2,
+                                                  plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_ET_predicted_ggplot2.png")
 
 ###############
 # Combined plot
@@ -4332,6 +4451,76 @@ ggsave('../plots/ggplot2/VPD_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_VPD_EI_R
 make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
+                                      vars = c("EI", "VPD", "P"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = 1000 * VPD_hist / P_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("1000 * VPD / P"["1981–2005"]~"(kPa / mm yr)"),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_VPD_P_EI_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_P_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_VPD_P_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("EI", "e"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = e_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(e["1981–2005"]~"(kPa)"),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_e_EI_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/e_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_e_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("EI", "e_sat"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = e_sat_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(e["sat 1981–2005"]~"(kPa)"),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_e_sat_EI_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/e_sat_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_e_sat_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("EI", "ET"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(ET["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_EI_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/ET_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_ET_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("EI", "ET", "ETo_FAO56_alfalfa"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist/ETo_FAO56_alfalfa_hist , y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET / PET"["1981–2005"]),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_EI_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_EI_RCP_ggplot2_TIDY.png', plot = p_ET2PET_EI_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
                                       vars = c("AI_FAO56_alfalfa"),
                                       by   = c("ensemble","model")) |>
                     mutate(x = AI_FAO56_alfalfa_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
@@ -4358,6 +4547,86 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
 
 # Save the plot
 ggsave('../plots/ggplot2/ET2PET_hist_vs_ET2PET_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_ET2PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = ET_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("ET"["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_hist_ET_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_ET_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_ET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa", "P"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = P_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("P"["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_hist_P_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_P_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_P_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa", "EI"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = EI_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("EI"["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_hist_EI_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_EI_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_EI_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa", "VPD"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = VPD_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("VPD"["2076–2100"]~"(kPa)"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_hist_VPD_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_VPD_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_VPD_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "ETo_FAO56_alfalfa", "Ta"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = Ta_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET/PET"["1981–2005"]),  y_lab = bquote("T"["a 2076–2100"]~"(°C)"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_hist_Ta_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_hist_vs_Ta_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_Ta_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
 
 make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
@@ -4554,7 +4823,7 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                     select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(RH["1981–2005"]~"(%)"),  y_lab = bquote(RH["2076–2100"]~"(%)"),
-                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = FALSE,
                   save_ggplot2_obj_as="p_RH_RH_RCP")
 # Save the plot
 ggsave('../plots/ggplot2/RH_hist_vs_RH_RCP_ggplot2_TIDY.png', plot = p_RH_RH_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
@@ -4599,6 +4868,219 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
 # Save the plot
 ggsave('../plots/ggplot2/delta_VPD_norm_delta_Ta_ggplot2_TIDY.png', plot = p_delta_VPD_norm_delta_Ta, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("Bo"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = Bo_hist, y = Bo_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(Bo["1981–2005"]),  y_lab = bquote(Bo["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_Bo_Bo_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/Bo_hist_vs_Bo_RCP_ggplot2_TIDY.png', plot = p_Bo_Bo_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+################################################################################
+# Emergent constraint – single fit
+
+Plot_labels <- tibble(
+  x = c(0.03, 0.03, 0.03),
+  y = c(0.96, 0.91, 0.86),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
+  color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
+)
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("EI"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = EI_hist, y = EI_fut, ensemble = interaction(ensemble, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(EI["1981–2005"]),  y_lab = bquote(EI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  plot_labels = Plot_labels,
+                  save_ggplot2_obj_as="p_EI_EI_RCP_single_fit")
+
+# 1) Extract the first point layer from `p`
+idx_pt <- which(vapply(p_EI_EI_RCP_single_fit$layers, function(l) inherits(l$geom, "GeomPoint"), logical(1)))[1]
+stopifnot(!is.na(idx_pt))  # ensure we found a point layer
+
+pts <- layer_data(p_EI_EI_RCP_single_fit, idx_pt)
+pts <- pts[is.finite(pts$x) & is.finite(pts$y), ]  # keep valid points
+
+# 2) Fit OLS on the plotted coordinates (same space as the plot)
+fit <- lm(y ~ x, data = pts)
+b0  <- unname(coef(fit)[1])
+b1  <- unname(coef(fit)[2])
+r2  <- summary(fit)$r.squared
+
+# Build a pretty, signed label with 2 decimals
+sign <- if (b1 >= 0) "+" else "−"
+eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
+                    b0, sign, abs(b1), r2)
+
+# 3) Add line + 95% CI and the equation label (top-left)
+plot_data <- ggplot_build(p_EI_EI_RCP_single_fit)
+X_range <- plot_data$layout$panel_params[[1]]$x.range
+Y_range <- plot_data$layout$panel_params[[1]]$y.range
+
+p_EI_EI_RCP_single_fit <- p_EI_EI_RCP_single_fit +
+  geom_smooth(
+    data = pts,
+    aes(x = x, y = y),
+    method = "lm", formula = y ~ x,
+    se = TRUE,
+    inherit.aes = FALSE,
+    color = "black", fill = "grey40", alpha = 0.25, linewidth = 0.6
+  ) +
+  annotate("text",
+           x = rescale(0.54, X_range), y = rescale(0.05, Y_range), label = eq_label,
+           hjust = 0, vjust = 0.5, size = 3.6)
+
+# Identify layers that are GeomPoint or GeomTextRepel
+idx_pts_txt <- which(vapply(p_EI_EI_RCP_single_fit$layers,
+                            function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                            logical(1)))
+
+# Move them to the end so they draw last (on top of lines etc.)
+if (length(idx_pts_txt)) {
+  p_EI_EI_RCP_single_fit$layers <- c(p_EI_EI_RCP_single_fit$layers[-idx_pts_txt], p_EI_EI_RCP_single_fit$layers[idx_pts_txt])
+}
+
+# Save the plot
+ggsave('../plots/ggplot2/EI_hist_vs_EI_RCP_single_fit_ggplot2_TIDY.png', plot = p_EI_EI_RCP_single_fit, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#-------------------------------------------------------------------------------
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "AI_FAO56_alfalfa"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = VPD_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(AI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_AI_VPD_RCP_single_fit")
+
+# 1) Extract the first point layer from `p`
+idx_pt <- which(vapply(p_AI_VPD_RCP_single_fit$layers, function(l) inherits(l$geom, "GeomPoint"), logical(1)))[1]
+stopifnot(!is.na(idx_pt))  # ensure we found a point layer
+
+pts <- layer_data(p_AI_VPD_RCP_single_fit, idx_pt)
+pts <- pts[is.finite(pts$x) & is.finite(pts$y), ]  # keep valid points
+
+# 2) Fit OLS on the plotted coordinates (same space as the plot)
+fit <- lm(y ~ x, data = pts)
+b0  <- unname(coef(fit)[1])
+b1  <- unname(coef(fit)[2])
+r2  <- summary(fit)$r.squared
+
+# Build a pretty, signed label with 2 decimals
+sign <- if (b1 >= 0) "+" else "−"
+eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
+                    b0, sign, abs(b1), r2)
+
+# 3) Add line + 95% CI and the equation label (top-left)
+plot_data <- ggplot_build(p_AI_VPD_RCP_single_fit)
+X_range <- plot_data$layout$panel_params[[1]]$x.range
+Y_range <- plot_data$layout$panel_params[[1]]$y.range
+
+p_AI_VPD_RCP_single_fit <- p_AI_VPD_RCP_single_fit +
+  geom_smooth(
+    data = pts,
+    aes(x = x, y = y),
+    method = "lm", formula = y ~ x,
+    se = TRUE,
+    inherit.aes = FALSE,
+    color = "black", fill = "grey40", alpha = 0.25, linewidth = 0.6
+  ) +
+  annotate("text",
+           x = rescale(0.54, X_range), y = rescale(0.05, Y_range), label = eq_label,
+           hjust = 0, vjust = 0.5, size = 3.6)
+
+# Identify layers that are GeomPoint or GeomTextRepel
+idx_pts_txt <- which(vapply(p_AI_VPD_RCP_single_fit$layers,
+                            function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                            logical(1)))
+
+# Move them to the end so they draw last (on top of lines etc.)
+if (length(idx_pts_txt)) {
+  p_AI_VPD_RCP_single_fit$layers <- c(p_AI_VPD_RCP_single_fit$layers[-idx_pts_txt], p_AI_VPD_RCP_single_fit$layers[idx_pts_txt])
+}
+
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_AI_RCP_single_fit_ggplot2_TIDY.png', plot = p_AI_VPD_RCP_single_fit, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#-------------------------------------------------------------------------------
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("AI_FAO56_alfalfa"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = AI_FAO56_alfalfa_hist, y = AI_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(AI["1981–2005"]),  y_lab = bquote(AI["2076–2100"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_AI_AI_RCP_single_fit")
+
+# 1) Extract the first point layer from `p`
+idx_pt <- which(vapply(p_AI_AI_RCP_single_fit$layers, function(l) inherits(l$geom, "GeomPoint"), logical(1)))[1]
+stopifnot(!is.na(idx_pt))  # ensure we found a point layer
+
+pts <- layer_data(p_AI_AI_RCP_single_fit, idx_pt)
+pts <- pts[is.finite(pts$x) & is.finite(pts$y), ]  # keep valid points
+
+# 2) Fit OLS on the plotted coordinates (same space as the plot)
+fit <- lm(y ~ x, data = pts)
+b0  <- unname(coef(fit)[1])
+b1  <- unname(coef(fit)[2])
+r2  <- summary(fit)$r.squared
+
+# Build a pretty, signed label with 2 decimals
+sign <- if (b1 >= 0) "+" else "−"
+eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
+                    b0, sign, abs(b1), r2)
+
+# 3) Add line + 95% CI and the equation label (top-left)
+plot_data <- ggplot_build(p_AI_AI_RCP_single_fit)
+X_range <- plot_data$layout$panel_params[[1]]$x.range
+Y_range <- plot_data$layout$panel_params[[1]]$y.range
+
+p_AI_AI_RCP_single_fit <- p_AI_AI_RCP_single_fit +
+  geom_smooth(
+    data = pts,
+    aes(x = x, y = y),
+    method = "lm", formula = y ~ x,
+    se = TRUE,
+    inherit.aes = FALSE,
+    color = "black", fill = "grey40", alpha = 0.25, linewidth = 0.6
+  ) +
+  annotate("text",
+           x = rescale(0.54, X_range), y = rescale(0.05, Y_range), label = eq_label,
+           hjust = 0, vjust = 0.5, size = 3.6)
+
+# Identify layers that are GeomPoint or GeomTextRepel
+idx_pts_txt <- which(vapply(p_AI_AI_RCP_single_fit$layers,
+                            function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                            logical(1)))
+
+# Move them to the end so they draw last (on top of lines etc.)
+if (length(idx_pts_txt)) {
+  p_AI_AI_RCP_single_fit$layers <- c(p_AI_AI_RCP_single_fit$layers[-idx_pts_txt], p_AI_AI_RCP_single_fit$layers[idx_pts_txt])
+}
+
+# Save the plot
+ggsave('../plots/ggplot2/AI_hist_vs_AI_RCP_single_fit_ggplot2_TIDY.png', plot = p_AI_AI_RCP_single_fit, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+with(pts, cor(x, y, use = "complete.obs", method = "pearson"))
+
 ################################################################################
 # Complementary relations
 make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
@@ -4616,6 +5098,53 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
 # Save the plot
 ggsave('../plots/ggplot2/p_ET_PET_hist_vs_ET_PET_fut_ggplot2_TIDY.png', plot = p_ET_PET_hist_ET_PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "P"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist + P_hist, y = ET_fut + P_fut , model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET + P"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote("ET + P"["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_P_hist_ET_P_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/p_ET_P_hist_vs_ET_P_fut_ggplot2_TIDY.png', plot = p_ET_P_hist_ET_P_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("ET", "P", "ETo_FAO56_alfalfa"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = ET_hist + P_hist + ETo_FAO56_alfalfa_hist,
+                           y = ET_fut + P_fut + ETo_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("ET + P + PET"["1981–2005"]~"(mm yr"^"-1"*")"),  y_lab = bquote("ET + P + PET"["2076–2100"]~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_P_PET_hist_ET_P_PET_fut")
+
+# Save the plot
+ggsave('../plots/ggplot2/p_ET_P_PET_hist_vs_ET_P_PET_fut_ggplot2_TIDY.png', plot = p_ET_P_PET_hist_ET_P_PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# Delta n over n vs. Delta VPD over VPD
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "n"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = (VPD_fut - VPD_hist) / VPD_hist,
+                           y = (n_fut + 0.72 - (n_hist + 0.72)) / (n_hist + 0.72), model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(Delta*"VPD / VPD"),  y_lab = bquote(Delta*omega~"/"~omega),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="d_omega_over_omega_vs_d_VPD_over_VPD")
+
+# Save the plot
+ggsave('../plots/ggplot2/d_omega_over_omega_vs_d_VPD_over_VPD_ggplot2_TIDY.png', plot = d_omega_over_omega_vs_d_VPD_over_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 LM_eq_labels <- tibble(
   x = rep(0.03, 6),
@@ -4631,3 +5160,282 @@ make_scatter_plot(data = Data_to_plot$diffs |>
                   hline = FALSE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
                   plot_labels = Plot_labels,
                   save_ggplot2_obj_as="p3")
+
+################################################################################
+
+# Pick variables to pair (keep only those present & numeric)
+vars <- c(
+  "A","ET","ET_eq","ETo_FAO56_alfalfa","ETo_FAO56_alfalfa_GCM_CO2_corr",
+  "ETo_FAO56_grass","ETo_FAO56_grass_GCM_CO2_corr","G","H","LAI","LE",
+  "LW_net","P","PET_PT_alpha_1.26","RH","RO","Rg","Rn","SVP","SW_net",
+  "Ta","VPD","W_to_mm","e","e_sat","lambda","max_ET_ratio","q","u10",
+  "rs_eff","g_eff","Bo","IWV","PE","AI_FAO56_alfalfa",
+  "AI_ETo_FAO56_alfalfa_GCM_CO2_corr","EI","ET_over_ETo_FAO56_alfalfa",
+  "ET_over_ETo_FAO56_alfalfa_GCM_CO2_corr","PET","n","ω"
+)
+
+paired <- pair_periods(
+  df   = Data_to_plot$abs,
+  hist = "1981_2005",
+  fut  = "2076_2100",
+  vars = vars,
+  by   = c("ensemble","model")
+)
+
+hist_cols <- paste0(vars, "_hist")
+fut_cols  <- paste0(vars, "_fut")
+
+# Keep only columns that actually exist & are numeric
+hist_cols <- intersect(hist_cols, names(paired))
+fut_cols  <- intersect(fut_cols,  names(paired))
+
+X <- as.matrix(paired[, hist_cols, drop = FALSE])
+Y <- as.matrix(paired[, fut_cols,  drop = FALSE])
+
+# Optional: drop columns with <2 finite values or zero variance
+ok_hist <- colSums(is.finite(X)) > 1 & apply(X, 2, sd, na.rm = TRUE) > 0
+ok_fut  <- colSums(is.finite(Y)) > 1 & apply(Y, 2, sd, na.rm = TRUE) > 0
+X <- X[, ok_hist, drop = FALSE]
+Y <- Y[, ok_fut,  drop = FALSE]
+
+# Cross correlation matrix (pairwise NA handling -> matches vector-by-vector)
+R <- cor(X, Y, use = "pairwise.complete.obs", method = "pearson")
+
+# Tidy long table
+cross_cor2 <- as_tibble(R, rownames = "var_hist") |>
+  pivot_longer(-var_hist, names_to = "var_fut", values_to = "r")
+
+
+top_all <- cross_cor2 |> 
+  filter(!is.na(r)) |> 
+  arrange(desc(abs(r)))   # highest absolute correlations first
+
+print(top_all, n = 20)    # top 20
+
+filter(top_all, var_fut  == "AI_FAO56_alfalfa_fut") |> View()
+
+################################################################################
+raw <- pair_periods(
+  df   = Data_to_plot$abs,
+  hist = "1981_2005",
+  fut  = "2076_2100",
+  vars = "AI_FAO56_alfalfa",
+  by   = c("ensemble","model")
+) |>
+  transmute(x = AI_FAO56_alfalfa_hist,
+            y = AI_FAO56_alfalfa_fut) |>
+  filter(is.finite(x), is.finite(y))
+
+cor(raw$x, raw$y, use = "complete.obs", method = "pearson")
+
+################################################################################
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = AI_FAO56_alfalfa, y = ET / ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("AI = PET / P"),  y_lab = bquote("ET / PET"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_AI")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_vs_AI_ggplot2_TIDY.png', plot = p_ET2PET_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = AI_FAO56_alfalfa, y = ET + ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("AI = PET / P"),  y_lab = bquote("ET + PET"~"(mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_and_PET_AI")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET&PET_vs_AI_ggplot2_TIDY.png', plot = p_ET_and_PET_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = AI_FAO56_alfalfa, y = ET / (ET + ETo_FAO56_alfalfa), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("AI = PET / P"),  y_lab = bquote("ET / (ET + PET)"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2ET_and_PET_AI")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2ET&PET_vs_AI_ggplot2_TIDY.png', plot = p_ET2ET_and_PET_AI, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = VPD, y = ET / ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("VPD (kPa)"),  y_lab = bquote("ET / PET"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_VPD")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_vs_VPD_ggplot2_TIDY.png', plot = p_ET2PET_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = P, y = ET / ETo_FAO56_alfalfa, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("P (mm yr"^"-1"*")"),  y_lab = bquote("ET / PET"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET2PET_P")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2PET_vs_P_ggplot2_TIDY.png', plot = p_ET2PET_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = Data_to_plot$abs |>
+                    mutate(x = P, y = ET, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote("P (mm yr"^"-1"*")"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_ET_vs_P")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET2_vs_P_ggplot2_TIDY.png', plot = p_ET_vs_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+#-------------------------------------------------------------------------------
+# Fit one Budyko curve
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = ETo_FAO56_alfalfa / P, y = ET / P, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("AI = PET/P"),  
+  y_lab = bquote("EI = ET/P"),
+  hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
+  plot_labels = Plot_labels,
+  save_ggplot2_obj_as="p"
+)
+
+BC_general <- Data_to_plot$abs |> 
+  filter(!is.na(ETo_FAO56_alfalfa), !is.na(ET), !is.na(P)) |> 
+  summarise(
+    n = Budyko_curve_optim(ETo_FAO56_alfalfa, ET, P),
+    ω = n + 0.72
+  )
+
+n_scalar <- pull(BC_general, n)
+
+pb <- ggplot_build(p)
+pp <- pb$layout$panel_params[[1]]
+xr <- if (!is.null(pp$x.range)) pp$x.range else pp$x$range
+yr <- if (!is.null(pp$y.range)) pp$y.range else pp$y$range
+
+# draw the curve over the full x-range
+p <- p +
+  stat_function(
+    fun  = function(x) 1 / (1 + (1 / x)^n_scalar)^(1 / n_scalar),
+    xlim = xr,
+    inherit.aes = FALSE,
+    linewidth = 1,
+    color = "grey40"
+  ) +
+  coord_cartesian(xlim = xr, ylim = yr) +
+  scale_x_continuous(expand = expansion(mult = 0)) +
+  scale_y_continuous(expand = expansion(mult = 0))
+
+
+source("./src/delta_derivations.R")
+
+p <- p +
+  geom_line(
+    data = pred_df |> arrange(AI_hat),
+    mapping = aes(x = AI_hat, y = EI_hat_J),  # mapping, not data
+    linetype = "dashed",
+    linewidth = 1,
+    inherit.aes = FALSE
+  )
+
+idx_pts_txt <- which(vapply(p$layers,
+                            function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                            logical(1)))
+
+# Move them to the end so they draw last (on top of lines etc.)
+if (length(idx_pts_txt)) {
+  p$layers <- c(p$layers[-idx_pts_txt], p$layers[idx_pts_txt])
+}
+
+p <- add_manual_legend(p, x1 = 0.59, x2 = 0.64, y1 = 0.10, y2 = 0.05)
+
+ggsave('../plots/ggplot2/BC_general_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+p_BC <- p
+
+#-------------------------------------------------------------------------------
+make_scatter_plot(
+  data = Data_to_plot$abs |>
+    mutate(x = VPD,
+           y = (ET / P) - (1 / (1 + (1 / (ETo_FAO56_alfalfa / P))^n_scalar)^(1 / n_scalar)), ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+  FIT = FALSE, robust_regression = TRUE,
+  xy_round = 0.05, xy_offset = 0.04,
+  x_lab = bquote("VPD"),  
+  y_lab = bquote("EI – EI"[omega]),
+  hline = TRUE, vline = FALSE, one_to_one_line = FALSE,
+  save_ggplot2_obj_as="p"
+)
+
+ggsave('../plots/ggplot2/EI_resids_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+p_EI_resids <- p
+#-------------------------------------------------------------------------------
+
+#--------------
+# Combined plot
+
+# Optional but helps: tiny, identical plot margins
+tight <- theme(plot.margin = margin(3,3,3,3))
+pA <- p_BC + tight
+pB <- p_EI_resids + tight
+pC <- omega_versus_VPD_and_omega_boxplot + tight
+pD <- d_omega_over_omega_vs_d_VPD_over_VPD   + tight
+
+
+# (2) Align *all five* first; keep all four sides ('tblr')
+aligned <- cowplot::align_plots(pA, pB, pC, pD, align = "hv", axis = "tblr")
+
+# (3) Build rows from the aligned grobs
+# --- top row with spacing between A and B ---
+top <- cowplot::plot_grid(
+  aligned[[1]], NULL, aligned[[2]],
+  ncol = 3,
+  rel_widths = c(1, 0.05, 1),
+  labels = c("a)", "", "b)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# --- bottom row with spacing between C, D ---
+bottom <- cowplot::plot_grid(
+  aligned[[3]], NULL, aligned[[4]],
+  ncol = 3,
+  rel_widths = c(1, 0.05, 1),
+  labels = c("c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = -0.1
+)
+
+# --- add vertical spacing between top and bottom ---
+combined <- cowplot::plot_grid(
+  NULL, top, NULL, bottom,
+  ncol = 1,
+  rel_heights = c(0.1, 3, 0.1, 3)  # the middle '0.1' is vertical gap
+)
+
+# (5) Save (use any size you like; e.g. 240×200 mm fits a 3:2 row split nicely)
+ggsave("../plots/ggplot2/combined_BC,EI,omega_ggplot2_TIDY.png", combined,
+       width = 240, height = 240, units = "mm", dpi = RES, bg = "white")
+
+#-------------------------------------------------------------------------------
+
+# What next
+# - can be BC with unchanged omega considered water-limited only and what is above is the effect of VPD
+# - what if one single omega is fitted and the difference is in ET or EI are analysed in repsonse to VPD?
+# - determine what should be a reduction of rs in PM that would ensure that all models are following the same BC
+# - check in BC why the in the energy-limited region the gray line does not origin in zero-zero
