@@ -67,6 +67,8 @@ P_ann <- sum(P)
 
 AI <- PET_ann / P_ann
 
+writeCDF(AI, "./nc/ERA5-land_AI_1981-2005.nc")
+
 # weights that sum to 1
 w <- days_in_m / sum(days_in_m)
 

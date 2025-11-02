@@ -1889,14 +1889,15 @@ p_omega_box <- resize_plot_elements(
 combined_plot <- p + 
   inset_element(
     p_omega_box,
-    left   = 0.3,  # relative x-position (0–1)
+    left   = 0.3,   # relative x-position (0–1)
     bottom = 0.35,  # relative y-position (0–1)
-    right  = 1.0,  # relative width (0–1)
-    top    = 1.0   # relative height (0–1)
+    right  = 0.99,  # 1.0,  # relative width (0–1)
+    top    = 0.99   # 1.0,  # relative height (0–1)
   )
 
 ggsave('../plots/ggplot2/ω_versus_VPD_and_omega_boxplot_ggplot2_TIDY.png', plot = combined_plot, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+# For further use
 omega_versus_VPD_and_omega_boxplot <- combined_plot
 
 ################
@@ -5435,7 +5436,7 @@ combined <- cowplot::plot_grid(
 
 # (5) Save (use any size you like; e.g. 240×200 mm fits a 3:2 row split nicely)
 ggsave("../plots/ggplot2/combined_BC,EI,omega_ggplot2_TIDY.png", combined,
-       width = 240, height = 240, units = "mm", dpi = RES, bg = "white")
+       width = 240, height = 239, units = "mm", dpi = RES, bg = "white")
 
 #-------------------------------------------------------------------------------
 
