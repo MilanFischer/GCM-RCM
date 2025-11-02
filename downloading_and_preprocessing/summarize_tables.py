@@ -52,7 +52,8 @@ def extract_monthly_means(filepath):
     monthly_means = df.groupby("Month")[mean_col].mean()
     return monthly_means
 
-def process_climate_folder(path_in, variable, ensemble):
+def process_climate_folder(path_in, variable):
+    path_in = f"{path_in}/{variable}/"
     files = [f for f in os.listdir(path_in) if f.endswith(".txt")]
     file_map = parse_model_files(files, variable)
 
@@ -88,15 +89,9 @@ process_climate_folder(
     variable="vpd"
 )
 
-# CMIP5_4_EURO-CORDEX
+# CMIP5
 process_climate_folder(
-    path_in="/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5_4_EURO-CORDEX",
-    variable="vpd"
-)
-
-# CMIP5_4_EURO-CORDEX
-process_climate_folder(
-    path_in="/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5_OTHERS",
+    path_in="/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5",
     variable="vpd"
 )
 

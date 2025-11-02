@@ -11,12 +11,19 @@ import re
 # ----------------------------------------------------------
 # Configuration
 
-# "EURO-CORDEX_EUR44", "CMIP5_4_EURO-CORDEX", "CMIP5_OTHERS", or "CMIP6"
+# "EURO-CORDEX_EUR44", "CMIP5_4_EURO-CORDEX", "CMIP5_OTHERS", "CMIP5", or "CMIP6"
 ensemble = "EURO-CORDEX_EUR44"
+
+# Variable to process - "vpd", "delta", "RH"
+variable = "delta"
+
+# Region bounding box
+lonmin, lonmax = 9, 21
+latmin, latmax = 47, 54
 
 if ensemble == "EURO-CORDEX_EUR44":
     root = "/mnt/data/Other/GCM-RCM/RCM/EURO-CORDEX/EUR44/EUR44_monthly_nc"
-    output_txt_dir = "/mnt/data/Other/GCM-RCM/climatology_tabs/EURO-CORDEX/EUR44"
+    output_txt_dir = f"/mnt/data/Other/GCM-RCM/climatology_tabs/EURO-CORDEX/EUR44/{variable}"
     models = [
         "CCCma-CanESM2_r1i1p1_SMHI-RCA4_v1", "CNRM-CERFACS-CNRM-CM5_r1i1p1_CNRM-ALADIN53_v1", "CNRM-CERFACS-CNRM-CM5_r1i1p1_HMS-ALADIN52_v1",
         "CNRM-CERFACS-CNRM-CM5_r1i1p1_SMHI-RCA4_v1", "CSIRO-QCCCE-CSIRO-Mk3-6-0_r1i1p1_SMHI-RCA4_v1", "ICHEC-EC-EARTH_r12i1p1_SMHI-RCA4_v1",
@@ -29,20 +36,28 @@ if ensemble == "EURO-CORDEX_EUR44":
 
 elif ensemble == "CMIP5_4_EURO-CORDEX":
     root = "/mnt/data/Other/GCM-RCM/GCM/CMIP5_4_EURO-CORDEX/monthly_nc"
-    output_txt_dir = "/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5_4_EURO-CORDEX"
+    output_txt_dir = f"/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5_4_EURO-CORDEX/{variable}"
     models = [
         "CanESM2", "CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "IPSL-CM5A-MR", "MPI-ESM-LR", "NorESM1-M"
     ]
 elif ensemble == "CMIP5_OTHERS":
     root = "/mnt/data/Other/GCM-RCM/GCM/CMIP5_OTHERS/monthly_nc"
-    output_txt_dir = "/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5_OTHERS"
+    output_txt_dir = f"/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5_OTHERS/{variable}"
     models = [
         "CSIRO-Mk3-6-0", "GFDL-CM3", "GFDL-ESM2G", "GISS-E2-H", "GISS-E2-R",
         "IPSL-CM5B-LR", "MIROC5-ESM-CHEM", "MOHC-HadGEM2-AO", "MRI-ESM1"
     ]
+elif ensemble == "CMIP5":
+    root = "/mnt/data/Other/GCM-RCM/GCM/CMIP5/monthly_nc"
+    output_txt_dir = f"/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP5/{variable}"
+    models = [
+        "bcc-csm1-1", "CESM1-BGC", "CESM1-CAM5", "CMCC-CESM", "CMCC-CMS",
+        "CNRM-CM5", "EC-EARTH", "GFDL-CM3", "GFDL-ESM2G", "HadGEM2-ES",
+        "inmcm4", "IPSL-CM5A-MR", "MPI-ESM-LR", "MRI-ESM1", "NorESM1-M"
+    ]
 elif ensemble == "CMIP6":
     root = "/mnt/data/Other/GCM-RCM/GCM/CMIP6/monthly_nc/ScenarioMIP"
-    output_txt_dir = "/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP6"
+    output_txt_dir = f"/mnt/data/Other/GCM-RCM/climatology_tabs/CMIP6/{variable}"
     models = [
         "AWI-CM-1-1-MR", "BCC-CSM2-MR", "CESM2", "CMCC-CM2-SR5", "CMCC-ESM2", "CNRM-CM6-1-HR",
         "EC-Earth3", "EC-Earth3-CC", "EC-EARTH3-Veg", "GFDL-CM4", "GFDL-ESM4", "HadGEM3-GC31-MM",
@@ -55,13 +70,6 @@ else:
 os.makedirs(output_txt_dir, exist_ok=True)
 
 scenarios = ["historical", "ssp585", "RCP85", "rcp85"]
-
-# Variable to process
-variable = "vpd"
-
-# Region bounding box
-lonmin, lonmax = 9, 21
-latmin, latmax = 47, 54
 
 # Time windows per scenario
 time_windows = {

@@ -201,7 +201,7 @@ for model in models:
                 # Now simplify to use it consitently with CMIP6 where hurs is used
                 # More precise would be to use the function taking into account ice and water
                 # saturation_vapor_pressure(tasmin) and saturation_vapor_pressure(tasmax)
-                # but this is skipped for simplicity this now
+                # but this is skipped for simplicity now
 
                 # Compute VPD
                 es_tasmin = 0.6108 * np.exp((17.27 * tasmin) / (tasmin + 237.3))
