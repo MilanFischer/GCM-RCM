@@ -1,16 +1,8 @@
+rm(list = ls())
+
 library(terra)
 library(rnaturalearth)
 library(sf)
-
-geff <- rast("./CMIP6_annual_nc/historical/NorESM2-MM/geff_AyrClim_NorESM2-MM_historical_1981-2005.nc")
-VPD <- rast("./CMIP6_annual_nc/historical/NorESM2-MM/vpd_AyrClim_NorESM2-MM_historical_1981-2005.nc")
-
-geff_c <- crop(geff, ext(0,30,44,56))
-VPD_c <- crop(VPD, ext(0,30,44,56))
-
-geff_vals <- values(geff_c)
-VPD_vals <- values(VPD_c)
-
 
 VPD_Tgt5C_hist <- rast("ERA5-land_VPD_mean_Tgt5C_1981-2005.nc")
 Ta <- mean(rast("ERA5-land_T2m_daily_1981-2005_ymon.nc"))
@@ -22,8 +14,6 @@ delta_hfls_over_hfls <- (hfls_ensemble$mean_hfls_2076_2100 - hfls_ensemble$mean_
 delta_hfls_over_hfls <- ifel(delta_hfls_over_hfls>0.5, NA, delta_hfls_over_hfls)
 delta_hfls_over_hfls <- ifel(delta_hfls_over_hfls< -0.5, NA, delta_hfls_over_hfls)
 plot(delta_hfls_over_hfls)
-
-plot(VPD_vals, geff_vals)
 
 hfls_hist <- hfls_ensemble$mean_hfls_1981_2005
 hfls_fut <- hfls_ensemble$mean_hfls_2076_2100
@@ -148,7 +138,9 @@ quantile(values(crop(VPD_Tgt5C_hist_s, ext(9,21,47,54))), probs = c(0.05, 0.95),
 # final_VPD <- ifel(LAI_s>LAI_range[1]&LAI_s<LAI_range[2], final_VPD, NA)
 
 # It goes over the peak
-final_VPD <- ifel(VPD_hist<0.975*VPD_crit_land&VPD_fut>1.025*VPD_crit_land, VPD_crit_land, NA)
+# final_VPD <- ifel(VPD_hist<0.95*VPD_crit_land&VPD_fut>1.05*VPD_crit_land, VPD_crit_land, NA)
+final_VPD <- ifel(VPD_hist<VPD_crit_land&VPD_fut>VPD_crit_land, VPD_crit_land, NA)
+# final_VPD <- ifel(VPD_hist<1.1*VPD_crit_land&VPD_fut>1.1*VPD_crit_land, VPD_crit_land, NA)
 
 # It has reasonable vegetation
 final_VPD <- ifel(LAI_s>1, final_VPD, NA)
@@ -156,7 +148,7 @@ plot(final_VPD, col = "red")
 lines(land_v)
 
 
-plot(ifel(hfls_fut>0.9*hfls_hist&hfls_fut<1.1*hfls_hist,1,NA))
+plot(ifel(hfls_fut<hfls_hist, 1, NA))
 lines(land_v)
 
 ################################################################################
@@ -175,9 +167,16 @@ if (any(installed_libs == FALSE)) {
 # Load libraries
 invisible(lapply(libs, library, character.only = TRUE))
 
-
-
 VPD_ann_filt <- ifel(final_VPD > 0, 1, NA)
+
+# Build a latitude raster on the same grid
+lat_vals <- yFromCell(VPD_ann_filt, 1:ncell(VPD_ann_filt))   # latitude at each cell center
+lat_r    <- setValues(rast(VPD_ann_filt), lat_vals)          # same geometry as VPD_ann_filt
+
+# set cells sout/north of 66.5°N to NA
+VPD_ann_filt[ abs(lat_r) > 66.5 ] <- NA
+
+writeCDF(VPD_ann_filt, "AFFM.nc", overwrite=TRUE)
 
 plot(VPD_ann_filt)
 lines(land_v)
@@ -320,16 +319,52 @@ bb_poly   <- st_as_sfc(bb) |> st_buffer(1e5)
 lines_cut <- suppressWarnings(st_intersection(lines_sfc, bb_poly))
 hatch_p   <- suppressWarnings(st_intersection(lines_cut, mask_p))
 
+# ---- Split hatch lines by latitude bands ----
+# Bands in lon/lat
+trop_ll <- st_as_sfc(st_bbox(c(xmin = -180, xmax = 180, ymin = -23.5, ymax =  23.5), crs = 4326))
+tempN_ll <- st_as_sfc(st_bbox(c(xmin = -180, xmax = 180, ymin =  23.5, ymax =  66.5), crs = 4326))
+tempS_ll <- st_as_sfc(st_bbox(c(xmin = -180, xmax = 180, ymin = -66.5, ymax = -23.5), crs = 4326))
+temp_ll  <- st_union(tempN_ll, tempS_ll)
+
+# Reproject bands to map CRS
+trop_p <- st_transform(trop_ll, crs_proj)
+temp_p <- st_transform(temp_ll,  crs_proj)
+
+# Intersect the already land-clipped hatch lines with bands
+hatch_trop <- suppressWarnings(st_intersection(hatch_p, trop_p))
+hatch_temp <- suppressWarnings(st_intersection(hatch_p, temp_p))
+
+# Study domain – area of interest
+AOI <- c(xmin = 9, xmax = 21, ymin = 47, ymax = 54)
+
+# Create a high-resolution polygon for AOI
+res <- 10
+x_seq <- seq(AOI["xmin"], AOI["xmax"], length.out = res)
+y_seq <- seq(AOI["ymin"], AOI["ymax"], length.out = res)
+AOI_points <- rbind(
+  cbind(x_seq, rep(AOI["ymin"], res)),  # Bottom side
+  cbind(rep(AOI["xmax"], res), y_seq),  # Right side
+  cbind(rev(x_seq), rep(AOI["ymax"], res)),  # Top side
+  cbind(rep(AOI["xmin"], res), rev(y_seq))  # Left side
+)
+
+AOI_polygon <- st_as_sf(st_sfc(st_polygon(list(AOI_points))), crs = 4326)
+
 # ---- Plot ----
-p <- ggplot() +
+p_h_AFFM_VPD <- ggplot() +
   geom_sf(data = grat_in, color = "grey55", linewidth = 0.3, linetype = "dotted") +
-  geom_sf_text(data = lab_lon_top, aes(label = lab), vjust = 0.9, size = 3, color = "grey20") +
-  geom_sf_text(data = lab_lon_bot, aes(label = lab), vjust = 0.1, size = 3, color = "grey20") +
-  geom_sf_text(data = lab_lat_lft, aes(label = lab), hjust = 0.95, size = 3, color = "grey20") +
-  geom_sf_text(data = lab_lat_rgt, aes(label = lab), hjust = 0.05, size = 3, color = "grey20") +
-  geom_sf(data = hatch_p, color = "#0a74da", linewidth = 0.6, alpha = 0.95, lineend = "round") +
+  # geom_sf_text(data = lab_lon_top, aes(label = lab), vjust = 0.9, size = 3, color = "grey20") +
+  geom_sf_text(data = lab_lon_bot, aes(label = lab), vjust = 0.1, nudge_y = -120000, size = 3.2, color = "grey20") +
+  geom_sf_text(data = lab_lat_lft, aes(label = lab), hjust = 0.95, nudge_x = -120000, size = 3.2, color = "grey20") +
+  # geom_sf_text(data = lab_lat_rgt, aes(label = lab), hjust = 0.05, size = 3, color = "grey20") +
+  # geom_sf(data = hatch_p, color = "#0a74da", linewidth = 0.6, alpha = 0.95, lineend = "round") +
+  # Two-colored hatches by latitude band
+  geom_sf(data = hatch_temp, color = "#0072B2", linewidth = 0.6, alpha = 0.95, lineend = "round") +
+  geom_sf(data = hatch_trop, color = "#009E73", linewidth = 0.6, alpha = 0.95, lineend = "round") +
   geom_sf(data = coast_p, color = "grey40", linewidth = 0.32) +
   geom_sf(data = frame_p, fill = NA, color = "grey20", linewidth = 0.4) +
+  # geom_sf(data = AOI_polygon, fill = "#FF4500", alpha = 0.1, color = NA) +    # faint translucent fill
+  #geom_sf(data = AOI_polygon, fill = NA, color = "#FF4500", linewidth = 0.8) +   # inner stroke
   coord_sf(crs = sf::st_crs(crs_proj),
            xlim = xlim_ex, ylim = ylim_ex,
            expand = FALSE, clip = "off") +
@@ -339,4 +374,9 @@ p <- ggplot() +
     panel.background = element_rect(fill = "white", color = NA)
   )
 
-ggsave("VPD_hatched_feedforward_mechanism.png", p, width = 10, height = 4.9, dpi = 800, bg = "white")
+ggsave("VPD_hatched_feedforward_mechanism.png", p_h_AFFM_VPD , width = 10, height = 4.9, dpi = 800, bg = "white")
+
+# Save
+saveRDS(p_h_AFFM_VPD, "p_h_AFFM_VPD.rds")
+
+

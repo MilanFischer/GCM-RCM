@@ -17,3 +17,6 @@ data_analysis/elevation_map/plots/ data_analysis/elevation_map/rast/ data_analys
 *.tif
 *.tiff
 data_analysis/elevation_map/
+
+# Ignore heavy csv
+data_analysis/GCMs_global/annual_nc/geff_vpd_land.csv
