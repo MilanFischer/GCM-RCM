@@ -23,6 +23,6 @@ data_analysis/GCMs_global/annual_nc/geff_vpd_land.csv
 data_analysis/GCMs_global/annual_nc/p_h_AFFM_VPD.rds
 data_analysis/GCMs_global/annual_nc/used_paths.txt
 data_analysis/GCMs_global/annual_nc/backup/geff_vpd_land.csv
-
+data_analysis/GCMs_global/annual_nc/backup/
 
 
