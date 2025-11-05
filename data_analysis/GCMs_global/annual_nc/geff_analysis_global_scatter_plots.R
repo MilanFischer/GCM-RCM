@@ -435,3 +435,192 @@ combined_annot <- ggdraw(combined) +
 # 6) Save
 ggsave("geff_vpd_panel_map_top_3bottom.png",
        combined_annot, width = 240, height = 180, units = "mm", dpi = 600, bg = "white")
+
+
+################################################################################
+# Bin averages
+# -------- parameters --------
+
+# ===============================
+# Parameters (pick ONE approach)
+# ===============================
+bin_frac <- 0.05   # e.g., ~1% of rows per bin WITHIN EACH zone (set n_bins <- NULL)
+n_bins   <- NULL   # OR set e.g. 25 and set bin_frac <- NULL
+
+pal <- c("Temperate"="#0072B2", "Tropical"="#009E73")
+
+# dat_both must have: VPD, geff, zone ("Temperate"/"Tropical")
+stopifnot(all(c("VPD","geff","zone") %in% names(dat_both)))
+
+# Derived variables
+rhoAir <- 1.225; CpAir <- 1004.67
+dat_both <- dat_both %>%
+  filter(is.finite(VPD), is.finite(geff)) %>%
+  mutate(
+    inv_sqrt_VPD = 1/sqrt(VPD),
+    ET = rhoAir * CpAir / 0.066 * VPD / 1000 * geff * 0.408 * 3600*24 / 1e6 * 365.25
+  )
+
+# ============================================================
+# Helper: equal-count bins per group (zone), RELATIVE bin size
+# - If bin_frac is given: bin_size_g = max(1, floor(n_g * bin_frac))
+# - If n_bins   is given: bin_size_g = ceiling(n_g / n_bins)
+# - Returns median + 25th/75th (x & y) and n per bin
+# ============================================================
+summarise_equalcount_rel <- function(df, x_var, y_var,
+                                     bin_frac = NULL, n_bins = NULL,
+                                     min_n = 20) {
+  stopifnot(!is.null(bin_frac) || !is.null(n_bins))
+  
+  df0 <- df %>%
+    mutate(.x = {{ x_var }}, .y = {{ y_var }}) %>%
+    filter(is.finite(.x), is.finite(.y)) %>%
+    select(zone, .x, .y)
+  
+  # split by group, process each independently, then bind
+  df_list <- df0 %>%
+    group_split(zone, keep = TRUE)
+  
+  out <- map_df(df_list, function(gdf) {
+    z <- gdf$zone[1]
+    gdf <- arrange(gdf, .x)
+    n_g <- nrow(gdf)
+    
+    bin_size_g <- if (!is.null(bin_frac)) {
+      max(1L, floor(n_g * bin_frac))
+    } else {
+      ceiling(n_g / n_bins)
+    }
+    
+    gdf <- gdf %>%
+      mutate(idx = row_number(),
+             bin_id = ceiling(idx / bin_size_g))
+    
+    gdf %>%
+      group_by(bin_id) %>%
+      summarise(
+        zone  = z,
+        x_med = median(.x, na.rm = TRUE),
+        x_q25 = quantile(.x, 0.25, na.rm = TRUE, type = 7),
+        x_q75 = quantile(.x, 0.75, na.rm = TRUE, type = 7),
+        y_med = median(.y, na.rm = TRUE),
+        y_q25 = quantile(.y, 0.25, na.rm = TRUE, type = 7),
+        y_q75 = quantile(.y, 0.75, na.rm = TRUE, type = 7),
+        n     = dplyr::n(),
+        .groups = "drop"
+      ) %>%
+      filter(n >= min_n) %>%
+      mutate(x_plot = x_med) %>%
+      arrange(bin_id)
+  })
+  
+  out
+}
+
+# Build summaries for each relationship
+bin_inv <- summarise_equalcount_rel(dat_both, x_var = inv_sqrt_VPD, y_var = geff,
+                                    bin_frac = bin_frac, n_bins = n_bins)
+bin_vpd <- summarise_equalcount_rel(dat_both, x_var = VPD,           y_var = geff,
+                                    bin_frac = bin_frac, n_bins = n_bins)
+bin_et  <- summarise_equalcount_rel(dat_both, x_var = VPD,           y_var = ET,
+                                    bin_frac = bin_frac, n_bins = n_bins)
+
+# Plot function: median point + IQR bars on both axes
+plot_binned_q <- function(d, x_lab, y_lab, xlim = NULL, ylim = NULL) {
+  ggplot(d, aes(x = x_plot, y = y_med, color = zone)) +
+    # horizontal IQR in x
+    ggstance::geom_errorbarh(aes(xmin = x_q25, xmax = x_q75, y = y_med),
+                             height = 0, size = 0.2, alpha = 0.9) +
+    # vertical IQR in y
+    geom_errorbar(aes(ymin = y_q25, ymax = y_q75),
+                  width = 0, size = 0.2, alpha = 0.9) +
+    geom_point(size = 1.8) +
+    scale_color_manual(values = pal, name = NULL) +
+    labs(x = x_lab, y = y_lab) +
+    { if (!is.null(xlim) || !is.null(ylim)) coord_cartesian(xlim = xlim, ylim = ylim) else coord_cartesian() } +
+    theme_bw() +
+    theme(legend.position = "none", panel.grid = element_blank())
+}
+
+# Build plots
+p_inv_med <- plot_binned_q(
+  bin_inv,
+  x_lab = expression("1 / " * sqrt(VPD) ~ "(" * kPa^-0.5 * ")"),
+  y_lab = expression(g[eff] ~ "(" * mm ~ s^-1 * ")"),
+  xlim  = c(0, 4), ylim = c(0, 30)
+)
+p_vpd_med <- plot_binned_q(
+  bin_vpd,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = expression(g[eff] ~ "(" * mm ~ s^-1 * ")"),
+  xlim  = c(0, 2.5), ylim = c(0, 30)
+)
+p_et_med <- plot_binned_q(
+  bin_et,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = expression(ET ~ "(" * mm ~ yr^-1 * ")"),
+  xlim  = c(0, 2.5), ylim = c(300, 1700)
+)
+
+# Save if you want
+ggsave("./geff_inv_sqrt_VPD_equalcountREL.png", p_inv_med, width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./geff_VPD_equalcountREL.png",         p_vpd_med, width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./ET_VPD_equalcountREL.png",           p_et_med,  width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+
+# Load the map
+p_h_AFFM_VPD <- readRDS("p_h_AFFM_VPD.rds")
+
+# Tiny, consistent margins
+tight_bot <- theme(plot.margin = margin(3, 3, 2, 3))   # for the map (small bottom margin)
+tight_top <- theme(plot.margin = margin(2, 3, 3, 3))   # for the bottom panels (small top margin)
+
+p_map <- p_h_AFFM_VPD + tight_bot
+p1    <- p_vpd_med        + tight_top
+p2    <- p_inv_med        + tight_top
+p3    <- p_et_med         + tight_top
+
+# Align (keeps panel sizes/axes consistent)
+aligned <- cowplot::align_plots(p_map, p1, p2, p3, align = "hv", axis = "tblr")
+
+# 3) Top row: just the map (label a)
+top_row <- cowplot::plot_grid(
+  aligned[[1]],
+  ncol = 1,
+  labels = "a)",
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 4) Bottom row: the three scatter/hex plots with small gaps
+bottom_row <- cowplot::plot_grid(
+  aligned[[2]], NULL, aligned[[3]], NULL, aligned[[4]],
+  ncol = 5,
+  rel_widths = c(1, 0.05, 1, 0.05, 1),
+  labels = c("b)", "", "c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 5) Stack rows with vertical spacing (tune rel_heights as you like)
+combined <- cowplot::plot_grid(
+  NULL,
+  top_row,
+  NULL,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(0.05, 1.7, 0, 1)  # map taller than the bottom row
+)
+
+combined_annot <- ggdraw(combined) +
+  draw_label("Temperate", x = 0.05, y = 0.95,
+             hjust = 0, vjust = 1, size = 12,
+             fontface = "bold.italic", color = "#0072B2") +
+  draw_label("Tropical",  x = 0.05, y = 0.91,
+             hjust = 0, vjust = 1, size = 12,
+             fontface = "bold.italic", color = "#009E73")
+
+# 6) Save
+ggsave("geff_vpd_panel_map_top_3bottom_bin_med.png",
+       combined_annot, width = 240, height = 180, units = "mm", dpi = 600, bg = "white")
