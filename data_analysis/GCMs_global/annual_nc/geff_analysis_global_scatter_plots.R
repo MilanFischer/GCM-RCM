@@ -839,3 +839,193 @@ ggsave("./geff_VPD_equalcountREL_norm.png",         p_vpd_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
 ggsave("./ET_VPD_equalcountREL_physical.png",       p_et_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+
+################################################################################
+
+################################################################################
+# Normalize VPD and geff per each grid — SINGLE ZONE
+################################################################################
+
+# ===============================
+# Zone selection (edit these two)
+# ===============================
+zone_name <- "Global"   # or "Temperate" / "Tropical" / any label you prefer
+AFFM_one  <- AFFM  # choose the mask for your single zone (e.g., AFFM_temp or AFFM_trop)
+
+# ===============================
+# Colors and parameters
+# ===============================
+pal <- c(setNames("#0072B2", zone_name))  # single color palette keyed by your zone
+
+# Binning controls (pick ONE style)
+bin_frac <- 0.05   # relative bin size (e.g., 5% of rows per bin)
+n_bins   <- NULL   # OR set an integer (e.g., 25) and set bin_frac <- NULL
+
+# ===============================
+# Helper: equal-count bins per group (zone), RELATIVE bin size
+# - If bin_frac is given: bin_size_g = max(1, floor(n_g * bin_frac))
+# - If n_bins   is given: bin_size_g = ceiling(n_g / n_bins)
+# - Returns median + 25th/75th (x & y) and n per bin
+# ===============================
+summarise_equalcount_rel <- function(df, x_var, y_var,
+                                     bin_frac = NULL, n_bins = NULL,
+                                     min_n = 20) {
+  stopifnot(!is.null(bin_frac) || !is.null(n_bins))
+  
+  df0 <- df %>%
+    mutate(.x = {{ x_var }}, .y = {{ y_var }}) %>%
+    filter(is.finite(.x), is.finite(.y)) %>%
+    select(zone, .x, .y)
+  
+  df_list <- df0 %>%
+    group_split(zone, keep = TRUE)
+  
+  out <- map_df(df_list, function(gdf) {
+    z <- gdf$zone[1]
+    gdf <- arrange(gdf, .x)
+    n_g <- nrow(gdf)
+    
+    bin_size_g <- if (!is.null(bin_frac)) {
+      max(1L, floor(n_g * bin_frac))
+    } else {
+      ceiling(n_g / n_bins)
+    }
+    
+    gdf <- gdf %>%
+      mutate(idx = row_number(),
+             bin_id = ceiling(idx / bin_size_g))
+    
+    gdf %>%
+      group_by(bin_id) %>%
+      summarise(
+        zone  = z,
+        x_med = median(.x, na.rm = TRUE),
+        x_q25 = quantile(.x, 0.25, na.rm = TRUE, type = 7),
+        x_q75 = quantile(.x, 0.75, na.rm = TRUE, type = 7),
+        y_med = median(.y, na.rm = TRUE),
+        y_q25 = quantile(.y, 0.25, na.rm = TRUE, type = 7),
+        y_q75 = quantile(.y, 0.75, na.rm = TRUE, type = 7),
+        n     = dplyr::n(),
+        .groups = "drop"
+      ) %>%
+      filter(n >= min_n) %>%
+      mutate(x_plot = x_med) %>%
+      arrange(bin_id)
+  })
+  
+  out
+}
+
+# ===============================
+# Extract + per-grid normalization (single zone)
+# ===============================
+
+# Keep grid id (raster cell index) to normalize within each grid
+vals_df <- terra::extract(AFFM_one, coords, cells = TRUE) |> 
+  as.data.frame() |>
+  dplyr::rename(grid_id = cell)
+
+# Keep the AFFM layer name logic
+if ("ID" %in% names(vals_df)) vals_df$ID <- NULL
+layer_name <- names(AFFM_one)[1]
+if (!(layer_name %in% names(vals_df))) layer_name <- names(vals_df)[1]
+
+# Apply the mask (keep points where the mask == 1)
+dat_sel <- dplyr::bind_cols(dat, vals_df) |>
+  dplyr::filter(.data[[layer_name]] == 1)
+
+# Physical constants for ET
+rhoAir <- 1.225
+CpAir  <- 1004.67
+K <- rhoAir * CpAir / 0.066 * 0.408 * 3600*24 / 1e6 * 365.25   # overall factor
+
+# Per-grid normalization + ET (physical) + ET_norm
+dat_both <- dat_sel |>
+  dplyr::filter(is.finite(VPD), is.finite(geff), VPD > 0) |>
+  dplyr::group_by(grid_id) |>
+  dplyr::mutate(
+    # per-grid maxima for normalization
+    VPD_max   = max(VPD,  na.rm = TRUE),
+    geff_max  = max(geff, na.rm = TRUE),
+    # normalized inputs
+    VPD_norm  = dplyr::if_else(VPD_max  > 0, VPD  / VPD_max,  NA_real_),
+    geff_norm = dplyr::if_else(geff_max > 0, geff / geff_max, NA_real_),
+    # physics: ET from ORIGINALS (units), then per-grid normalized ET
+    ET_norm       = K * (VPD_norm/1000) * geff_norm,
+    # convenience: inverse sqrt on normalized VPD
+    inv_sqrt_VPD_norm = 1 / sqrt(VPD_norm),
+    zone = zone_name
+  ) |>
+  dplyr::ungroup()
+
+# Quick sanity
+stopifnot(all(c("VPD","geff","VPD_norm","geff_norm","ET_norm",
+                "inv_sqrt_VPD_norm","zone") %in% names(dat_both)))
+
+# ===============================
+# Build binned summaries
+# ===============================
+bin_inv <- summarise_equalcount_rel(
+  dat_both, x_var = inv_sqrt_VPD_norm, y_var = geff_norm,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+bin_vpd <- summarise_equalcount_rel(
+  dat_both, x_var = VPD_norm,          y_var = geff_norm,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+bin_et  <- summarise_equalcount_rel(
+  dat_both, x_var = VPD_norm,               y_var = ET_norm,        # physical ET vs physical VPD
+  bin_frac = bin_frac, n_bins = n_bins
+)
+# If you want normalized ET vs normalized VPD instead, swap to:
+# bin_et  <- summarise_equalcount_rel(dat_both, x_var = VPD_norm, y_var = ET_norm,
+#                                     bin_frac = bin_frac, n_bins = n_bins)
+
+# ===============================
+# Plot helper: median point + IQR bars
+# ===============================
+plot_binned_q <- function(d, x_lab, y_lab, xlim = NULL, ylim = NULL) {
+  ggplot(d, aes(x = x_plot, y = y_med, color = zone)) +
+    ggstance::geom_errorbarh(aes(xmin = x_q25, xmax = x_q75, y = y_med),
+                             height = 0, size = 0.2, alpha = 0.9) +
+    geom_errorbar(aes(ymin = y_q25, ymax = y_q75),
+                  width = 0, size = 0.2, alpha = 0.9) +
+    geom_point(size = 1.8) +
+    scale_color_manual(values = pal, name = NULL) +
+    labs(x = x_lab, y = y_lab) +
+    coord_cartesian(xlim = xlim, ylim = ylim) +
+    theme_bw() +
+    theme(legend.position = "none", panel.grid = element_blank())
+}
+
+# ===============================
+# Build plots
+# ===============================
+p_inv_med <- plot_binned_q(
+  bin_inv,
+  x_lab = expression("1 / " * sqrt(VPD[norm]) ~ "(" * kPa^-0.5 * ")"),
+  y_lab = expression(g["eff norm"]),
+  xlim  = c(0, 4), ylim = c(0, 1)
+)
+p_vpd_med <- plot_binned_q(
+  bin_vpd,
+  x_lab = expression("VPD"[norm]),
+  y_lab = expression(g["eff norm"]),
+  xlim  = c(0, 1), ylim = c(0, 1)
+)
+p_et_med <- plot_binned_q(
+  bin_et,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = expression(ET_norm ~ "(" * mm ~ yr^-1 * ")"),
+  xlim  = c(0, 1), ylim = c(0, 60)
+)
+
+# ===============================
+# Save
+# ===============================
+ggsave("./geff_inv_sqrt_VPD_equalcountREL_norm_single.png", p_inv_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./geff_VPD_equalcountREL_norm_single.png",         p_vpd_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./ET_VPD_equalcountREL_physical_single.png",       p_et_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
