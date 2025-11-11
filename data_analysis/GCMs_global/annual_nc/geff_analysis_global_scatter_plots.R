@@ -1029,3 +1029,432 @@ ggsave("./geff_VPD_equalcountREL_norm_single.png",         p_vpd_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
 ggsave("./ET_VPD_equalcountREL_physical_single.png",       p_et_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+
+
+################################################################################
+# Normalize g_eff by predicted g_eff at VPD_ref = 0.1 kPa (per grid)
+################################################################################
+
+# -------------------------------
+# User choices
+# -------------------------------
+zone_name <- "Global"   # label for this zone
+AFFM_one  <- AFFM_temp  # pick the mask raster for this zone
+VPD_ref   <- 0.1        # kPa, reference VPD for normalization
+pal       <- c(setNames("#0072B2", zone_name))
+
+# Binning controls (pick ONE)
+bin_frac <- 0.05
+n_bins   <- NULL
+
+# -------------------------------
+# Helper: equal-count bins per zone
+# -------------------------------
+summarise_equalcount_rel <- function(df, x_var, y_var,
+                                     bin_frac = NULL, n_bins = NULL,
+                                     min_n = 20) {
+  stopifnot(!is.null(bin_frac) || !is.null(n_bins))
+  df0 <- df %>%
+    mutate(.x = {{ x_var }}, .y = {{ y_var }}) %>%
+    filter(is.finite(.x), is.finite(.y)) %>%
+    select(zone, .x, .y)
+  df_list <- df0 %>% group_split(zone, keep = TRUE)
+  
+  map_df(df_list, function(gdf) {
+    z <- gdf$zone[1]
+    gdf <- arrange(gdf, .x)
+    n_g <- nrow(gdf)
+    bin_size_g <- if (!is.null(bin_frac)) max(1L, floor(n_g * bin_frac)) else ceiling(n_g / n_bins)
+    
+    gdf %>%
+      mutate(idx = row_number(), bin_id = ceiling(idx / bin_size_g)) %>%
+      group_by(bin_id) %>%
+      summarise(
+        zone  = z,
+        x_med = median(.x, na.rm = TRUE),
+        x_q25 = quantile(.x, 0.25, na.rm = TRUE, type = 7),
+        x_q75 = quantile(.x, 0.75, na.rm = TRUE, type = 7),
+        y_med = median(.y, na.rm = TRUE),
+        y_q25 = quantile(.y, 0.25, na.rm = TRUE, type = 7),
+        y_q75 = quantile(.y, 0.75, na.rm = TRUE, type = 7),
+        n     = dplyr::n(),
+        .groups = "drop"
+      ) %>%
+      filter(n >= min_n) %>%
+      mutate(x_plot = x_med) %>%
+      arrange(bin_id)
+  })
+}
+
+# -------------------------------
+# Extract grid_id + apply mask (single zone)
+# -------------------------------
+vals_df <- terra::extract(AFFM_one, coords, cells = TRUE) |>
+  as.data.frame() |>
+  dplyr::rename(grid_id = cell)
+
+if ("ID" %in% names(vals_df)) vals_df$ID <- NULL
+layer_name <- names(AFFM_one)[1]
+if (!(layer_name %in% names(vals_df))) layer_name <- names(vals_df)[1]
+
+dat_sel <- dplyr::bind_cols(dat, vals_df) |>
+  dplyr::filter(.data[[layer_name]] == 1)
+
+# -------------------------------
+# Prepare data, fit per-grid linear model, get g_ref at VPD_ref
+# -------------------------------
+dat_base <- dat_sel %>%
+  filter(is.finite(VPD), is.finite(geff), VPD > 0) %>%
+  mutate(inv_sqrt_VPD = 1/sqrt(VPD),
+         zone = zone_name)
+
+# Fit geff ~ inv_sqrt_VPD per grid to get a and b
+grid_fits <- dat_base %>%
+  group_by(grid_id) %>%
+  group_modify(~{
+    df <- .x
+    # need at least 3 points and some variation
+    ok <- nrow(df) >= 3 && sd(df$inv_sqrt_VPD, na.rm = TRUE) > 0 && sd(df$geff, na.rm = TRUE) > 0
+    if (!ok) return(tibble(a = NA_real_, b = NA_real_))
+    fit <- try(lm(geff ~ inv_sqrt_VPD, data = df), silent = TRUE)
+    if (inherits(fit, "try-error")) return(tibble(a = NA_real_, b = NA_real_))
+    co <- coef(fit)
+    tibble(a = unname(co[1]), b = unname(co[2]))
+  }) %>%
+  ungroup()
+
+# Evaluate g_ref = a + b * (1/sqrt(VPD_ref))
+inv_ref <- 1/sqrt(VPD_ref)
+grid_fits <- grid_fits %>%
+  mutate(g_ref = a + b * inv_ref)
+
+# Join g_ref back and build the ratio
+dat_both <- dat_base %>%
+  left_join(grid_fits %>% select(grid_id, g_ref), by = "grid_id") %>%
+  mutate(
+    geff_ratio = dplyr::if_else(is.finite(g_ref) & g_ref > 0, geff / g_ref, NA_real_)
+  )
+
+# Sanity check
+stopifnot(all(c("VPD","geff","geff_ratio","zone") %in% names(dat_both)))
+
+# -------------------------------
+# Binned summaries: geff/geff(0.1) vs VPD
+# -------------------------------
+bin_ratio <- summarise_equalcount_rel(
+  dat_both, x_var = VPD, y_var = geff_ratio,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+
+# -------------------------------
+# Plot helper
+# -------------------------------
+plot_binned_q <- function(d, x_lab, y_lab, xlim = NULL, ylim = NULL) {
+  ggplot(d, aes(x = x_plot, y = y_med, color = zone)) +
+    ggstance::geom_errorbarh(aes(xmin = x_q25, xmax = x_q75, y = y_med),
+                             height = 0, size = 0.2, alpha = 0.9) +
+    geom_errorbar(aes(ymin = y_q25, ymax = y_q75),
+                  width = 0, size = 0.2, alpha = 0.9) +
+    geom_point(size = 1.8) +
+    scale_color_manual(values = pal, name = NULL) +
+    labs(x = x_lab, y = y_lab) +
+    coord_cartesian(xlim = xlim, ylim = ylim) +
+    theme_bw() +
+    theme(legend.position = "none", panel.grid = element_blank())
+}
+
+# ===============================
+# (Optional) ET ratios using the same reference
+# ===============================
+dat_both <- dat_both %>%
+  mutate(
+    # Physical ET (if not computed yet, uncomment the next 2 lines)
+    # rhoAir = 1.225; CpAir = 1004.67;
+    # K = rhoAir * CpAir / 0.066 * 0.408 * 3600*24 / 1e6 * 365.25,
+    ET_ref    = K * (VPD_ref/1000) * g_ref,                         # per-grid ET at VPD_ref
+    ET_ratio  = dplyr::if_else(is.finite(ET_ref) & ET_ref > 0,
+                               (VPD / VPD_ref) * geff_ratio, NA_real_)
+  )
+
+# ===============================
+# Build binned summaries for the three plots
+# ===============================
+bin_inv <- summarise_equalcount_rel(
+  dat_both, x_var = 1/sqrt(VPD), y_var = geff_ratio,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+bin_vpd <- summarise_equalcount_rel(
+  dat_both, x_var = VPD,          y_var = geff_ratio,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+bin_et  <- summarise_equalcount_rel(
+  dat_both, x_var = VPD,          y_var = ET_ratio,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+
+# ===============================
+# Plot helper (reuses your existing helper)
+# ===============================
+# plot_binned_q(...) already defined above
+
+# Axis ranges from data (robust to extremes)
+x_vpd_max  <- quantile(dat_both$VPD, 0.99, na.rm = TRUE)
+y_ratio_hi <- quantile(dat_both$geff_ratio, 0.99, na.rm = TRUE)
+y_etr_hi   <- quantile(dat_both$ET_ratio,   0.99, na.rm = TRUE)
+
+# ===============================
+# Build plots
+# ===============================
+p_inv_med <- plot_binned_q(
+  bin_inv,
+  x_lab = expression("1 / " * sqrt(VPD) ~ "(" * kPa^-0.5 * ")"),
+  y_lab = bquote(g[eff] / g[eff] ~ (VPD==.(VPD_ref))),
+  xlim  = c(0, quantile(1/sqrt(dat_both$VPD), 0.99, na.rm = TRUE)),
+  ylim  = c(0, max(1.2, y_ratio_hi, na.rm = TRUE))
+)
+
+p_vpd_med <- plot_binned_q(
+  bin_vpd,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = bquote(g[eff] / g[eff] ~ (VPD==.(VPD_ref))),
+  xlim  = c(0, x_vpd_max),
+  ylim  = c(0, max(1.2, y_ratio_hi, na.rm = TRUE))
+)
+
+p_et_med <- plot_binned_q(
+  bin_et,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = bquote(ET / ET ~ (VPD==.(VPD_ref))),
+  xlim  = c(0, x_vpd_max),
+  ylim  = c(0, max(1.5, y_etr_hi, na.rm = TRUE))
+)
+
+# ===============================
+# Save
+# ===============================
+ggsave("./geff_ratio_vs_inv_sqrtVPD_equalcount_single.png", p_inv_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./geff_ratio_vs_VPD_equalcount_single.png",        p_vpd_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./ET_ratio_vs_VPD_equalcount_single.png",          p_et_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+
+
+################################################################################
+# Normalize g_eff by predicted g_eff at VPD_ref = 0.1 kPa, per grid, for 2 zones
+################################################################################
+
+# ===============================
+# Colors and parameters
+# ===============================
+pal <- c("Temperate"="#0072B2", "Tropical"="#009E73")
+
+# Binning controls (pick ONE style)
+bin_frac <- 0.05   # relative bin size within each zone (e.g., 5% per bin)
+n_bins   <- NULL   # OR set an integer (e.g., 25) and set bin_frac <- NULL
+
+# Reference VPD for normalization
+VPD_ref <- 0.1   # kPa
+
+# ===============================
+# Helper: equal-count bins per group (zone), RELATIVE bin size
+# ===============================
+summarise_equalcount_rel <- function(df, x_var, y_var,
+                                     bin_frac = NULL, n_bins = NULL,
+                                     min_n = 20) {
+  stopifnot(!is.null(bin_frac) || !is.null(n_bins))
+  
+  df0 <- df %>%
+    mutate(.x = {{ x_var }}, .y = {{ y_var }}) %>%
+    filter(is.finite(.x), is.finite(.y)) %>%
+    select(zone, .x, .y)
+  
+  df_list <- df0 %>%
+    group_split(zone, keep = TRUE)
+  
+  map_df(df_list, function(gdf) {
+    z <- gdf$zone[1]
+    gdf <- arrange(gdf, .x)
+    n_g <- nrow(gdf)
+    
+    bin_size_g <- if (!is.null(bin_frac)) {
+      max(1L, floor(n_g * bin_frac))
+    } else {
+      ceiling(n_g / n_bins)
+    }
+    
+    gdf %>%
+      mutate(idx = row_number(),
+             bin_id = ceiling(idx / bin_size_g)) %>%
+      group_by(bin_id) %>%
+      summarise(
+        zone  = z,
+        x_med = median(.x, na.rm = TRUE),
+        x_q25 = quantile(.x, 0.25, na.rm = TRUE, type = 7),
+        x_q75 = quantile(.x, 0.75, na.rm = TRUE, type = 7),
+        y_med = median(.y, na.rm = TRUE),
+        y_q25 = quantile(.y, 0.25, na.rm = TRUE, type = 7),
+        y_q75 = quantile(.y, 0.75, na.rm = TRUE, type = 7),
+        n     = dplyr::n(),
+        .groups = "drop"
+      ) %>%
+      filter(n >= min_n) %>%
+      mutate(x_plot = x_med) %>%
+      arrange(bin_id)
+  })
+}
+
+# ===============================
+# Extract + model-based normalization helpers
+# ===============================
+
+# Physical constants for ET
+rhoAir <- 1.225
+CpAir  <- 1004.67
+K <- rhoAir * CpAir / 0.066 * 0.408 * 3600*24 / 1e6 * 365.25   # overall factor
+
+# Small utility to process a single zone block
+process_zone <- function(mask_rast, zone_label) {
+  # Keep grid id (raster cell index)
+  vals_df <- terra::extract(mask_rast, coords, cells = TRUE) |> 
+    as.data.frame() |>
+    dplyr::rename(grid_id = cell)
+  
+  if ("ID" %in% names(vals_df)) vals_df$ID <- NULL
+  layer_name <- names(mask_rast)[1]
+  if (!(layer_name %in% names(vals_df))) layer_name <- names(vals_df)[1]
+  
+  dat_sel <- dplyr::bind_cols(dat, vals_df) |>
+    dplyr::filter(.data[[layer_name]] == 1)
+  
+  dat_base <- dat_sel |>
+    dplyr::filter(is.finite(VPD), is.finite(geff), VPD > 0) |>
+    dplyr::mutate(inv_sqrt_VPD = 1/sqrt(VPD),
+                  zone = zone_label)
+  
+  # Fit geff ~ inv_sqrt_VPD PER GRID to get a,b
+  grid_fits <- dat_base |>
+    dplyr::group_by(grid_id) |>
+    dplyr::group_modify(~{
+      df <- .x
+      ok <- nrow(df) >= 3 &&
+        stats::sd(df$inv_sqrt_VPD, na.rm = TRUE) > 0 &&
+        stats::sd(df$geff, na.rm = TRUE) > 0
+      if (!ok) return(tibble(a = NA_real_, b = NA_real_))
+      fit <- try(stats::lm(geff ~ inv_sqrt_VPD, data = df), silent = TRUE)
+      if (inherits(fit, "try-error")) return(tibble(a = NA_real_, b = NA_real_))
+      co <- stats::coef(fit)
+      tibble(a = unname(co[1]), b = unname(co[2]))
+    }) |>
+    dplyr::ungroup()
+  
+  # Predicted reference at VPD_ref
+  inv_ref <- 1/sqrt(VPD_ref)
+  grid_fits <- grid_fits |> dplyr::mutate(g_ref = a + b * inv_ref)
+  
+  # Join back, compute ratios and ET variants
+  dat_out <- dat_base |>
+    dplyr::left_join(grid_fits |> dplyr::select(grid_id, g_ref), by = "grid_id") |>
+    dplyr::mutate(
+      geff_ratio = dplyr::if_else(is.finite(g_ref) & g_ref > 0, geff / g_ref, NA_real_),
+      ET         = K * (VPD/1000) * geff,
+      ET_ref     = K * (VPD_ref/1000) * g_ref,
+      ET_ratio   = dplyr::if_else(is.finite(ET_ref) & ET_ref > 0,
+                                  (VPD / VPD_ref) * geff_ratio, NA_real_)  # algebraic simplification
+    )
+  
+  dat_out
+}
+
+# ── Temperate
+dat_ok_temp <- process_zone(AFFM_temp, "Temperate")
+
+# ── Tropical
+dat_ok_trop <- process_zone(AFFM_trop, "Tropical")
+
+# ── Combine
+dat_both <- dplyr::bind_rows(dat_ok_temp, dat_ok_trop)
+
+# Quick sanity
+stopifnot(all(c("VPD","geff","geff_ratio","ET","ET_ratio","zone") %in% names(dat_both)))
+
+# ===============================
+# Build binned summaries (ratios)
+# ===============================
+bin_inv <- summarise_equalcount_rel(
+  dat_both, x_var = 1/sqrt(VPD), y_var = geff_ratio,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+bin_vpd <- summarise_equalcount_rel(
+  dat_both, x_var = VPD,          y_var = geff_ratio,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+bin_et  <- summarise_equalcount_rel(
+  # dat_both, x_var = VPD,          y_var = ET_ratio,
+  dat_both, x_var = VPD,          y_var = ET,
+  bin_frac = bin_frac, n_bins = n_bins
+)
+
+# ===============================
+# Plot helper: median point + IQR bars
+# ===============================
+plot_binned_q <- function(d, x_lab, y_lab, xlim = NULL, ylim = NULL) {
+  ggplot(d, aes(x = x_plot, y = y_med, color = zone)) +
+    ggstance::geom_errorbarh(aes(xmin = x_q25, xmax = x_q75, y = y_med),
+                             height = 0, size = 0.2, alpha = 0.9) +
+    geom_errorbar(aes(ymin = y_q25, ymax = y_q75),
+                  width = 0, size = 0.2, alpha = 0.9) +
+    geom_point(size = 1.8) +
+    scale_color_manual(values = pal, name = NULL) +
+    labs(x = x_lab, y = y_lab) +
+    coord_cartesian(xlim = xlim, ylim = ylim) +
+    theme_bw() +
+    theme(legend.position = "none", panel.grid = element_blank())
+}
+
+# Robust axis ranges
+x_vpd_max   <- quantile(dat_both$VPD, 0.99, na.rm = TRUE)
+x_inv_max   <- quantile(1/sqrt(dat_both$VPD), 0.99, na.rm = TRUE)
+y_ratio_hi  <- quantile(dat_both$geff_ratio, 0.99, na.rm = TRUE)
+y_etr_hi    <- quantile(dat_both$ET_ratio,   0.99, na.rm = TRUE)
+
+# ===============================
+# Build plots (ratios)
+# ===============================
+p_inv_med <- plot_binned_q(
+  bin_inv,
+  x_lab = expression("1 / " * sqrt(VPD) ~ "(" * kPa^-0.5 * ")"),
+  y_lab = bquote(g[eff] / g[eff] ~ (VPD==.(VPD_ref))),
+  xlim  = c(0, x_inv_max), ylim = c(0, max(1.2, y_ratio_hi, na.rm = TRUE))
+)
+
+p_vpd_med <- plot_binned_q(
+  bin_vpd,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = bquote(g[eff] / g[eff] ~ (VPD==.(VPD_ref))),
+  xlim  = c(0, x_vpd_max), ylim = c(0, max(1.2, y_ratio_hi, na.rm = TRUE))
+)
+
+# p_et_med <- plot_binned_q(
+#   bin_et,
+#   x_lab = expression("VPD (kPa)"),
+#   y_lab = bquote(ET / ET ~ (VPD==.(VPD_ref))),
+#   xlim  = c(0, x_vpd_max), ylim = c(0, max(1.5, y_etr_hi, na.rm = TRUE))
+# )
+
+p_et_med <- plot_binned_q(
+  bin_et,
+  x_lab = expression("VPD (kPa)"),
+  y_lab = bquote(ET~(mm~yr^"-1")),
+  xlim  = c(0, x_vpd_max), ylim = c(0, 2000)
+)
+
+# ===============================
+# Save
+# ===============================
+ggsave("./geff_ratio_vs_inv_sqrtVPD_equalcount_twozones.png", p_inv_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./geff_ratio_vs_VPD_equalcount_twozones.png",        p_vpd_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+ggsave("./ET_ratio_vs_VPD_equalcount_twozones.png",          p_et_med,
+       width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
