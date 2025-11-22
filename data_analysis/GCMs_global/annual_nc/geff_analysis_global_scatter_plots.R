@@ -840,7 +840,63 @@ ggsave("./geff_VPD_equalcountREL_norm.png",         p_vpd_med,
 ggsave("./ET_VPD_equalcountREL_physical.png",       p_et_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
 
-################################################################################
+# Load the map
+p_h_AFFM_VPD <- readRDS("p_h_AFFM_VPD.rds")
+
+# Tiny, consistent margins
+tight_bot <- theme(plot.margin = margin(3, 3, 2, 3))   # for the map (small bottom margin)
+tight_top <- theme(plot.margin = margin(2, 3, 3, 3))   # for the bottom panels (small top margin)
+
+p_map <- p_h_AFFM_VPD + tight_bot
+p1    <- p_vpd_med        + tight_top
+p2    <- p_inv_med        + tight_top
+p3    <- p_et_med         + tight_top
+
+# Align (keeps panel sizes/axes consistent)
+aligned <- cowplot::align_plots(p_map, p1, p2, p3, align = "hv", axis = "tblr")
+
+# 3) Top row: just the map (label a)
+top_row <- cowplot::plot_grid(
+  aligned[[1]],
+  ncol = 1,
+  labels = "a)",
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 4) Bottom row: the three scatter/hex plots with small gaps
+bottom_row <- cowplot::plot_grid(
+  aligned[[2]], NULL, aligned[[3]], NULL, aligned[[4]],
+  ncol = 5,
+  rel_widths = c(1, 0.05, 1, 0.05, 1),
+  labels = c("b)", "", "c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 5) Stack rows with vertical spacing (tune rel_heights as you like)
+combined <- cowplot::plot_grid(
+  NULL,
+  top_row,
+  NULL,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(0.05, 1.7, 0, 1)  # map taller than the bottom row
+)
+
+combined_annot <- ggdraw(combined) +
+  draw_label("Temperate", x = 0.05, y = 0.95,
+             hjust = 0, vjust = 1, size = 12,
+             fontface = "bold.italic", color = "#0072B2") +
+  draw_label("Tropical",  x = 0.05, y = 0.91,
+             hjust = 0, vjust = 1, size = 12,
+             fontface = "bold.italic", color = "#009E73")
+
+# 6) Save
+ggsave("geff_vpd_panel_map_top_3bottom_REL_norm.png",
+       combined_annot, width = 240, height = 180, units = "mm", dpi = 600, bg = "white")
 
 ################################################################################
 # Normalize VPD and geff per each grid — SINGLE ZONE
@@ -1030,6 +1086,55 @@ ggsave("./geff_VPD_equalcountREL_norm_single.png",         p_vpd_med,
 ggsave("./ET_VPD_equalcountREL_physical_single.png",       p_et_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
 
+# Load the map
+p_h_AFFM_VPD <- readRDS("p_h_AFFM_VPD.rds")
+
+# Tiny, consistent margins
+tight_bot <- theme(plot.margin = margin(3, 3, 2, 3))   # for the map (small bottom margin)
+tight_top <- theme(plot.margin = margin(2, 3, 3, 3))   # for the bottom panels (small top margin)
+
+p_map <- p_h_AFFM_VPD + tight_bot
+p1    <- p_vpd_med        + tight_top
+p2    <- p_inv_med        + tight_top
+p3    <- p_et_med         + tight_top
+
+# Align (keeps panel sizes/axes consistent)
+aligned <- cowplot::align_plots(p_map, p1, p2, p3, align = "hv", axis = "tblr")
+
+# 3) Top row: just the map (label a)
+top_row <- cowplot::plot_grid(
+  aligned[[1]],
+  ncol = 1,
+  labels = "a)",
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 4) Bottom row: the three scatter/hex plots with small gaps
+bottom_row <- cowplot::plot_grid(
+  aligned[[2]], NULL, aligned[[3]], NULL, aligned[[4]],
+  ncol = 5,
+  rel_widths = c(1, 0.05, 1, 0.05, 1),
+  labels = c("b)", "", "c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 5) Stack rows with vertical spacing (tune rel_heights as you like)
+combined <- cowplot::plot_grid(
+  NULL,
+  top_row,
+  NULL,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(0.05, 1.7, 0, 1)  # map taller than the bottom row
+)
+
+# 6) Save
+ggsave("geff_vpd_panel_map_top_3bottom_REL_norm_single.png",
+       combined, width = 240, height = 180, units = "mm", dpi = 600, bg = "white")
 
 ################################################################################
 # Normalize g_eff by predicted g_eff at VPD_ref = 0.1 kPa (per grid)
@@ -1239,6 +1344,56 @@ ggsave("./geff_ratio_vs_VPD_equalcount_single.png",        p_vpd_med,
 ggsave("./ET_ratio_vs_VPD_equalcount_single.png",          p_et_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
 
+
+# Load the map
+p_h_AFFM_VPD <- readRDS("p_h_AFFM_VPD.rds")
+
+# Tiny, consistent margins
+tight_bot <- theme(plot.margin = margin(3, 3, 2, 3))   # for the map (small bottom margin)
+tight_top <- theme(plot.margin = margin(2, 3, 3, 3))   # for the bottom panels (small top margin)
+
+p_map <- p_h_AFFM_VPD + tight_bot
+p1    <- p_vpd_med        + tight_top
+p2    <- p_inv_med        + tight_top
+p3    <- p_et_med         + tight_top
+
+# Align (keeps panel sizes/axes consistent)
+aligned <- cowplot::align_plots(p_map, p1, p2, p3, align = "hv", axis = "tblr")
+
+# 3) Top row: just the map (label a)
+top_row <- cowplot::plot_grid(
+  aligned[[1]],
+  ncol = 1,
+  labels = "a)",
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 4) Bottom row: the three scatter/hex plots with small gaps
+bottom_row <- cowplot::plot_grid(
+  aligned[[2]], NULL, aligned[[3]], NULL, aligned[[4]],
+  ncol = 5,
+  rel_widths = c(1, 0.05, 1, 0.05, 1),
+  labels = c("b)", "", "c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 5) Stack rows with vertical spacing (tune rel_heights as you like)
+combined <- cowplot::plot_grid(
+  NULL,
+  top_row,
+  NULL,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(0.05, 1.7, 0, 1)  # map taller than the bottom row
+)
+
+# 6) Save
+ggsave("geff_vpd_panel_map_top_3bottom_equalcount_single.png",
+       combined, width = 240, height = 180, units = "mm", dpi = 600, bg = "white")
 
 ################################################################################
 # Normalize g_eff by predicted g_eff at VPD_ref = 0.1 kPa, per grid, for 2 zones
@@ -1458,3 +1613,61 @@ ggsave("./geff_ratio_vs_VPD_equalcount_twozones.png",        p_vpd_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
 ggsave("./ET_ratio_vs_VPD_equalcount_twozones.png",          p_et_med,
        width = 80, height = 80, dpi = 600, units = "mm", bg = "white")
+
+# Load the map
+p_h_AFFM_VPD <- readRDS("p_h_AFFM_VPD.rds")
+
+# Tiny, consistent margins
+tight_bot <- theme(plot.margin = margin(3, 3, 2, 3))   # for the map (small bottom margin)
+tight_top <- theme(plot.margin = margin(2, 3, 3, 3))   # for the bottom panels (small top margin)
+
+p_map <- p_h_AFFM_VPD + tight_bot
+p1    <- p_vpd_med        + tight_top
+p2    <- p_inv_med        + tight_top
+p3    <- p_et_med         + tight_top
+
+# Align (keeps panel sizes/axes consistent)
+aligned <- cowplot::align_plots(p_map, p1, p2, p3, align = "hv", axis = "tblr")
+
+# 3) Top row: just the map (label a)
+top_row <- cowplot::plot_grid(
+  aligned[[1]],
+  ncol = 1,
+  labels = "a)",
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 4) Bottom row: the three scatter/hex plots with small gaps
+bottom_row <- cowplot::plot_grid(
+  aligned[[2]], NULL, aligned[[3]], NULL, aligned[[4]],
+  ncol = 5,
+  rel_widths = c(1, 0.05, 1, 0.05, 1),
+  labels = c("b)", "", "c)", "", "d)"),
+  label_colour = "#333333",
+  label_size = 12,
+  hjust = -1, vjust = 0.1
+)
+
+# 5) Stack rows with vertical spacing (tune rel_heights as you like)
+combined <- cowplot::plot_grid(
+  NULL,
+  top_row,
+  NULL,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(0.05, 1.7, 0, 1)  # map taller than the bottom row
+)
+
+combined_annot <- ggdraw(combined) +
+  draw_label("Temperate", x = 0.05, y = 0.95,
+             hjust = 0, vjust = 1, size = 12,
+             fontface = "bold.italic", color = "#0072B2") +
+  draw_label("Tropical",  x = 0.05, y = 0.91,
+             hjust = 0, vjust = 1, size = 12,
+             fontface = "bold.italic", color = "#009E73")
+
+# 6) Save
+ggsave("geff_vpd_panel_map_top_3bottom_equalcount_twozones.png",
+       combined_annot, width = 240, height = 180, units = "mm", dpi = 600, bg = "white")
