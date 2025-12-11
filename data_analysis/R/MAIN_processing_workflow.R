@@ -93,8 +93,8 @@ AP <- 97.73785 # From ERA5-land for the domain in 1981–2005
 # gamma <- CpAir*AP/(0.622*lambda*10^6)
 
 # Based on the "SUPPLEMENT_DataTables_Meinshausen_6May2020.xlsx" for the CMIP6
-CO2_2076_2100_RCP85 <- 979.42 # ppm, 972.28 ppm for whole world, 979.42 for northern hemisphere
-# CO2_2076_2100_RCP85 <- 828.38 # CMIP5, https://tntcat.iiasa.ac.at/RcpDb/dsd?Action=htmlpage&page=download
+CO2_2076_2100_RCP85_CMIP5 <- 828.38 # CMIP5, https://tntcat.iiasa.ac.at/RcpDb/dsd?Action=htmlpage&page=download
+CO2_2076_2100_RCP85_CMIP6 <- 979.42 # ppm, 972.28 ppm for whole world, 979.42 for northern hemisphere
 CO2_1981_2005 <- 359.47
 
 # dgs/gs predicted based on optimality theory
@@ -110,12 +110,12 @@ Ko <- Kc25 * exp(0.015 * Ta_ST -25)
 a2 <- Kc * (1 + Coa / Ko)
 a2
 # a2 <- 510 
--1/((a2 / (s * CO2_1981_2005)) + 1) * (CO2_2076_2100_RCP85 - CO2_1981_2005) / CO2_1981_2005
+-1/((a2 / (s * CO2_1981_2005)) + 1) * (CO2_2076_2100_RCP85_CMIP6 - CO2_1981_2005) / CO2_1981_2005
 
 # The correction by Yang et al. (2018) https://doi.org/10.1038/s41558-018-0361-0
 S_rs_CO2 <- 0.09 # ppm^-1
 
-rs_CO2 <- function(rs_1981_2005 = 70, S_rs_CO2 = 0.09){
+rs_CO2 <- function(rs_1981_2005 = 70, S_rs_CO2 = 0.09, CO2_2076_2100_RCP85 = CO2_2076_2100_RCP85_CMIP6){
   # S_rs_CO2 <- 0.09 % ppm^-1
   rs <- rs_1981_2005 * (1 + S_rs_CO2 / 100 * (CO2_2076_2100_RCP85 - CO2_1981_2005))
   return(rs)
@@ -125,7 +125,7 @@ rs_CO2 <- function(rs_1981_2005 = 70, S_rs_CO2 = 0.09){
 (1 / rs_CO2(70) * 1000 - (1 / 70 * 1000)) / (1 / 70 * 1000)
 
 # Inverse of the correction
-rs_CO2_inv <- function(rs_2076_2100 = 109.0568, S_rs_CO2 = 0.09){
+rs_CO2_inv <- function(rs_2076_2100 = 109.0568, S_rs_CO2 = 0.09, CO2_2076_2100_RCP85 = CO2_2076_2100_RCP85_CMIP6){
   # S_rs_CO2 <- 0.09 % ppm^-1
   rs <-  rs_2076_2100 / (1 + S_rs_CO2 / 100 * (CO2_2076_2100_RCP85 - CO2_1981_2005))
   return(rs)
@@ -134,8 +134,10 @@ rs_CO2_inv <- function(rs_2076_2100 = 109.0568, S_rs_CO2 = 0.09){
 # Surface resistance of the grass or alfalfa reference surface (s/m)
 rs_ref_grass <- 70
 rs_ref_alfalfa <- 35 # Original value in Allen et al. (2005) is 45 s/m, it was reduced in order to ensure that ET is always smaller than ETr
-rs_ref_grass_2076_2100_RCP85 <- rs_CO2(rs_ref_grass)
-rs_ref_alfalfa_2076_2100_RCP85 <- rs_CO2(rs_ref_alfalfa)
+rs_ref_grass_2076_2100_RCP85_CMIP5 <- rs_CO2(rs_1981_2005 = rs_ref_grass, CO2_2076_2100_RCP85 = CO2_2076_2100_RCP85_CMIP5)
+rs_ref_grass_2076_2100_RCP85_CMIP6 <- rs_CO2(rs_1981_2005 = rs_ref_grass, CO2_2076_2100_RCP85 = CO2_2076_2100_RCP85_CMIP6)
+rs_ref_alfalfa_2076_2100_RCP85_CMIP5 <- rs_CO2(rs_ref_alfalfa, CO2_2076_2100_RCP85 = CO2_2076_2100_RCP85_CMIP5)
+rs_ref_alfalfa_2076_2100_RCP85_CMIP6 <- rs_CO2(rs_ref_alfalfa, CO2_2076_2100_RCP85 = CO2_2076_2100_RCP85_CMIP6)
 
 # Gap-filling of variable using mean values for the purpose of the Penman-Monteith PET
 GF_u <- TRUE
@@ -318,7 +320,7 @@ Data_wide <- Data_wide |>
       u2 = log(2 / zo) / log(10 / zo) * u10
       ra = 208 / u2
       rs = rs_ref_grass
-      (SVP * A + rhoAir * CpAir * VPD_d / ra) /
+      (delta_d * A + rhoAir * CpAir * VPD_d / ra) /
         (delta_d + gamma * (1 + rs / ra)) * W_to_mm * DAYS_IN_MONTH
     },
     # ETo FAO56 grass with correction for CO2 effect on stomatal conductance for GCMs
@@ -327,10 +329,10 @@ Data_wide <- Data_wide |>
       zo = 0.123 * 0.12
       u2 = log(2 / zo) / log(10 / zo) * u10
       ra = 208 / u2
-      rs = if_else(
-        PERIOD == "2076_2100" & ENSEMBLE %in% c("CMIP5", "CMIP6") & Ta > 5,
-        rs_ref_grass_2076_2100_RCP85,
-        rs_ref_grass
+      rs = case_when(
+        PERIOD == "2076_2100" & ENSEMBLE == "CMIP5" & Ta > 5 ~ rs_ref_grass_2076_2100_RCP85_CMIP5,
+        PERIOD == "2076_2100" & ENSEMBLE == "CMIP6" & Ta > 5 ~ rs_ref_grass_2076_2100_RCP85_CMIP6,
+        TRUE ~ rs_ref_grass       # <- default fallback value
       )
       (delta_d * A + rhoAir * CpAir * VPD_d / ra) /
         (delta_d + gamma * (1 + rs / ra)) * W_to_mm * DAYS_IN_MONTH
@@ -352,10 +354,10 @@ Data_wide <- Data_wide |>
       u2 = log(2 / zo) / log(10 / zo) * u10
       # u2 = u10 * 4.87 / log(67.8 * 10 - 5.42)
       ra = 118 / u2
-      rs = if_else(
-        PERIOD == "2076_2100" & ENSEMBLE %in% c("CMIP5", "CMIP6") & Ta > 5,
-        rs_ref_alfalfa_2076_2100_RCP85,
-        rs_ref_alfalfa
+      rs = case_when(
+        PERIOD == "2076_2100" & ENSEMBLE == "CMIP5" & Ta > 5 ~ rs_ref_alfalfa_2076_2100_RCP85_CMIP5,
+        PERIOD == "2076_2100" & ENSEMBLE == "CMIP6" & Ta > 5 ~ rs_ref_alfalfa_2076_2100_RCP85_CMIP6,
+        TRUE ~ rs_ref_alfalfa       # <- default fallback value
       )
       (delta_d * A + rhoAir * CpAir * VPD_d / ra) /
         (delta_d + gamma * (1 + rs / ra)) * W_to_mm * DAYS_IN_MONTH
