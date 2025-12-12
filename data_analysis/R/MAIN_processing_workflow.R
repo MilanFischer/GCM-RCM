@@ -4553,7 +4553,6 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="p_ET2PET_hist_ET2PET_fut")
 
-
 # Save the plot
 ggsave('../plots/ggplot2/ET2PET_hist_vs_ET2PET_fut_ggplot2_TIDY.png', plot = p_ET2PET_hist_ET2PET_fut, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
@@ -4739,6 +4738,20 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
 # Save the plot
 ggsave('../plots/ggplot2/VPD_hist_vs_VPD_RCP_ggplot2_TIDY.png', plot = p_VPD_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs  |> filter(ensemble  %in% c("CMIP5", "EUR-44")),
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = VPD_hist, y = VPD_fut, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]~(kPa)),  y_lab = bquote(VPD["2076–2100"]~(kPa)),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_VPD_VPD_RCP")
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_VPD_RCP_CMIP&EUR-44-ggplot2_TIDY.png', plot = p_VPD_VPD_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
 make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
@@ -4836,6 +4849,40 @@ make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                   save_ggplot2_obj_as="p_RH_RH_RCP")
 # Save the plot
 ggsave('../plots/ggplot2/RH_hist_vs_RH_RCP_ggplot2_TIDY.png', plot = p_RH_RH_RCP, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# VPD vs. Delta VPD over VPD
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "n"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = VPD_hist,
+                           y = (VPD_fut - VPD_hist) / VPD_hist, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = "VPD (kPa)",  y_lab = bquote(Delta*"VPD / VPD"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="VPD_hist_vs_d_VPD_over_VPD")
+
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_d_VPD_over_VPD_ggplot2_TIDY.png', plot = VPD_hist_vs_d_VPD_over_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# VPD vs. Delta VPD
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "n"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = VPD_hist,
+                           y = (VPD_fut - VPD_hist), model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = "VPD (kPa)",  y_lab = bquote(Delta*"VPD (kPa)"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="VPD_hist_vs_d_VPD")
+
+# Save the plot
+ggsave('../plots/ggplot2/VPD_hist_vs_d_VPD_ggplot2_TIDY.png', plot = VPD_hist_vs_d_VPD, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # Test log(VPD_fut/VPD_hist) vs Delta Ta
 
