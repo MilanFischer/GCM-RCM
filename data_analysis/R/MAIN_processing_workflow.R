@@ -985,7 +985,8 @@ plot_data <- ggplot_build(p4)
 X_range <- plot_data$layout$panel_params[[1]]$x.range
 Y_range <- plot_data$layout$panel_params[[1]]$y.range
 
-p4 <- p4 + annotate("text", x = rescale(0.66, X_range), y = rescale(0.96, Y_range), label = bquote(bold("EUR-44 CO"["2"]~"corr")), hjust = 0, color = "#2e8b57", size=4)
+p4 <- p4 + annotate("text", x = rescale(0.66, X_range), y = rescale(0.96, Y_range),
+                    label = as.expression(bquote(bold("EUR-44 CO"["2"]~"corr"))), hjust = 0, color = "#2e8b57", size=4)
 
 # Save the plot
 ggsave('../plots/ggplot2/delta_g_eff_over_g_eff_vs_Ta_ggplot2_TIDY.png', plot = p4, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
@@ -2187,7 +2188,7 @@ Budyko_plot <- Budyko_plot +
   annotate("text",
            x = rescale(0.3, X_range),
            y = rescale(0.9, Y_range),
-           label = bquote(bold("Energy") ~ italic("vs.") ~ bold("Water")~"limitation"),
+           label = as.expression(bquote(bold("Energy") ~ italic("vs.") ~ bold("Water")~"limitation")),
            hjust = 0, color = "#333333", size = 4) +
   
   # Left-pointing arrow above "Energy"
@@ -2284,7 +2285,7 @@ grid.newpage(); grid.draw(final_figure)
 ggsave("../plots/ggplot2/Domain_VPD_water_balance&atmosphere.png",
        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
        # dpi = RES, units = "mm")
-       dpi = 1200, units = "mm")
+       dpi = 1200, units = "mm", bg = "white")
 
 #__________________________________________________________
 ###########################################################
