@@ -44,8 +44,8 @@ clamp_P      <- TRUE
 n_max_iter   <- 25000
 
 # Set the metadat and the ouput file name
-metadata <- "Jarvis parameter set and output tibble. Created 2025-09-29 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
-out_file <- "./RData/20250929_jarvis_objects.RData"
+metadata <- "Jarvis parameter set and output tibble. Created 2025-12-12 by Milan Fischer. Data includes g_eff model outputs and climate drivers. VPD was optimized"
+out_file <- "./RData/20251212_jarvis_objects.RData"
 
 # Guard
 eps <- 1e-6
@@ -58,22 +58,34 @@ df <- Data_to_plot$abs
 # df <- df |> mutate(Rg = Rn) # Just for quick testing of replacing Rg by Rn
 
 # Select only the variables that are used for the purpose of g_eff modeling
-df <- df |> 
+df <- df |>
   select(g_eff, ET, Rg, A, Ta, P, VPD, PERIOD, ensemble, model, 
-         color, fill, border, shape, linetype) |> 
+         color, fill, border, shape, linetype) |>
   mutate(
     CO2_term = {
-      if (exists("CO2_2076_2100_RCP85", inherits = TRUE) &&
-          exists("CO2_1981_2005", inherits = TRUE)) {
-        dln <- log(CO2_2076_2100_RCP85 / CO2_1981_2005)
-        if_else(grepl("CMIP", ensemble) & PERIOD == "2076_2100", dln, 0)
+      if (exists("CO2_1981_2005", inherits = TRUE) &&
+          exists("CO2_2076_2100_RCP85_CMIP5", inherits = TRUE) &&
+          exists("CO2_2076_2100_RCP85_CMIP6", inherits = TRUE)) {
+        
+        dln_cmip5 <- log(CO2_2076_2100_RCP85_CMIP5 / CO2_1981_2005)
+        dln_cmip6 <- log(CO2_2076_2100_RCP85_CMIP6 / CO2_1981_2005)
+        
+        if_else(
+          PERIOD == "2076_2100" & grepl("CMIP5", ensemble),
+          dln_cmip5,
+          if_else(
+            PERIOD == "2076_2100" & grepl("CMIP6", ensemble),
+            dln_cmip6,
+            0
+          )
+        )
       } else {
         0
       }
     },
-    inv_sqrt_VPD = 1 / sqrt(pmax(VPD, eps)),   # ★ create before modeling
+    inv_sqrt_VPD = 1 / sqrt(pmax(VPD, eps)),
     K_ET = (rhoAir * CpAir / gamma) * VPD * (1/1000) *
-      1 / ((2.501e6 - 2361 * Ta) / 1e6) * (3600 * 24) / 1e6 * 365.25  # ★ create
+      1 / ((2.501e6 - 2361 * Ta) / 1e6) * (3600 * 24) / 1e6 * 365.25
   )
 
 df_opt <- df |> 
@@ -121,11 +133,6 @@ jarvis_g_eff <- function(par, input_df, fVPD_mode = c("given","optimize")) {
   if (Ta_min > Ta_max) { tmp <- Ta_min; Ta_min <- Ta_max; Ta_max <- tmp }
   if (P_min  > P_max ) { tmp <- P_min ; P_min  <- P_max ; P_max  <- tmp }
 
-  # enforce minimum separations <<<
-  # Ta_max <- max(Ta_max, Ta_min + 1)    # at least 1 °C gap
-  # Rg_max <- max(Rg_max, Rg_min + 10)   # at least 10 W m^-2 gap
-  # P_max  <- max(P_max,  P_min  + 10)   # at least 10 mm gap
-  
   # VPD coefs
   if (fVPD_mode == "optimize") {
     b0_VPD <- par[["b0_VPD"]]; b1_VPD <- par[["b1_VPD"]]
