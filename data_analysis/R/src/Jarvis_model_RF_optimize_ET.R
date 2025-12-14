@@ -30,7 +30,7 @@ rf_num_trees   <- 1200L     # used for both tuned and fixed fits
 # ---- GENERAL variable gate knobs (applies to ALL predictors) ------------------
 # Permutation gate: keep if (CI lower bound > 0) AND (relative ΔOOB >= threshold)
 var_gate_when      <- "insignificant"   # "insignificant" or "significant" (rare)
-perm_B             <- 1000               # repeats for permutation importance
+perm_B             <- 1000              # repeats for permutation importance
 perm_ci_levels     <- c(0.05, 0.95)     # CI for permutation deltas
 min_rel_keep_pct   <- 1.0               # practical effect threshold (% ΔOOB RMSE)
 

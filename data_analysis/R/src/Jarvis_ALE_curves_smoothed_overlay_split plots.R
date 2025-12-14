@@ -1,10 +1,11 @@
 # ============================================================
 # ALE curves for Jarvis model (ET and g_eff) — split per variable
 # Each variable gets its own standalone plot => y-axis ticks visible on all
+# (run AFTER fitting; loads bundle)
 # ============================================================
 
 suppressPackageStartupMessages({
-  library(dplyr)
+  library(tidyverse)
   library(tibble)
   library(ggplot2)
 })
@@ -26,8 +27,8 @@ show_rug            <- TRUE   # show data-support rug on relative plots
 overlay_on_relative <- FALSE # also overlay obs on relative (centered) plots
 obs_max_points      <- 5000   # downsample cap for observed scatter per plot
 
-out_dir <- "../Plots/ggplot2"  # change if you like
-dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+plot_dir <- "../Plots/ggplot2"  # change if you like
+dir.create(plot_dir, showWarnings = FALSE, recursive = TRUE)
 
 # -----------------------
 # Helpers: derive cols Jarvis needs + predict ET & g_eff
@@ -221,22 +222,22 @@ build_abs_plot <- function(v, what = c("ET","geff")) {
 for (v in vars) {
   # Relative ET
   g <- build_rel_plot(v, "ET")
-  ggsave(file.path(out_dir, sprintf("ALE_ET_smoothed_rel_%s.png", v)),
+  ggsave(file.path(plot_dir, sprintf("ALE_ET_smoothed_rel_%s.png", v)),
          g, width = 6, height = 4.5, dpi = 300)
   
   # Relative g_eff
   g <- build_rel_plot(v, "geff")
-  ggsave(file.path(out_dir, sprintf("ALE_geff_smoothed_rel_%s.png", v)),
+  ggsave(file.path(plot_dir, sprintf("ALE_geff_smoothed_rel_%s.png", v)),
          g, width = 6, height = 4.5, dpi = 300)
   
   # Anchored ET
   g <- build_abs_plot(v, "ET")
-  ggsave(file.path(out_dir, sprintf("ALE_ET_smoothed_abs_%s.png", v)),
+  ggsave(file.path(plot_dir, sprintf("ALE_ET_smoothed_abs_%s.png", v)),
          g, width = 6, height = 4.5, dpi = 300)
   
   # Anchored g_eff
   g <- build_abs_plot(v, "geff")
-  ggsave(file.path(out_dir, sprintf("ALE_geff_smoothed_abs_%s.png", v)),
+  ggsave(file.path(plot_dir, sprintf("ALE_geff_smoothed_abs_%s.png", v)),
          g, width = 6, height = 4.5, dpi = 300)
 }
 

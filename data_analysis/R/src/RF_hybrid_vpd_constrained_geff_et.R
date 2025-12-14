@@ -32,14 +32,15 @@
 ################################################################################
 
 suppressPackageStartupMessages({
-  library(dplyr)
-  library(tibble)
-  library(ggplot2)
-  library(purrr)
+  library(tidyverse)
   library(DEoptim)
   library(ranger)
   library(patchwork)
 })
+
+source("./src/Jarvis_preprocessing.R")
+
+out_file <- "./RData/20251214_RF_objects.RData"
 
 # ------------------------------------------------------------------------------
 # 0) Global knobs & basic sanity checks
@@ -63,38 +64,43 @@ stopifnot(all(c("VPD","Ta","P","Rg","CO2_term","ET","g_eff") %in% names(df)))
 df_opt <- df_opt %>% mutate(VPD = pmax(VPD, eps))
 df     <- df     %>% mutate(VPD = pmax(VPD, eps))
 
+# Guard required metadata columns for CO2_ppm mapping
+.has_co2_meta_opt <- all(c("ensemble", "PERIOD") %in% names(df_opt))
+.has_co2_meta_df  <- all(c("ensemble", "PERIOD") %in% names(df))
+
+if (!.has_co2_meta_opt) message("Note: df_opt lacks ensemble/PERIOD → CO2_ppm will not be created for df_opt.")
+if (!.has_co2_meta_df)  message("Note: df lacks ensemble/PERIOD → CO2_ppm will not be created for df.")
+
 # ------------------------------------------------------------------------------
 # Add real CO2 concentration (ppm) for interpretation & PDPs ONLY
 # Model fitting continues to use CO2_term
 # ------------------------------------------------------------------------------
 
-df_opt <- df_opt %>%
-  mutate(
-    CO2_ppm = case_when(
-      # EUR-44: no physiology → represent on ppm axis as reference CO2
-      grepl("EUR", ensemble, ignore.case = TRUE) ~ CO2_1981_2005,
-      
-      # Historical reference period
-      PERIOD == "1981_2005" ~ CO2_1981_2005,
-      
-      # Future scenarios
-      PERIOD == "2076_2100" & ensemble == "CMIP5" ~ CO2_2076_2100_RCP85_CMIP5,
-      PERIOD == "2076_2100" & ensemble == "CMIP6" ~ CO2_2076_2100_RCP85_CMIP6,
-      
-      TRUE ~ NA_real_
+if (.has_co2_meta_opt) {
+  df_opt <- df_opt %>%
+    mutate(
+      CO2_ppm = case_when(
+        grepl("EUR", ensemble, ignore.case = TRUE) ~ CO2_1981_2005,
+        PERIOD == "1981_2005" ~ CO2_1981_2005,
+        PERIOD == "2076_2100" & ensemble == "CMIP5" ~ CO2_2076_2100_RCP85_CMIP5,
+        PERIOD == "2076_2100" & ensemble == "CMIP6" ~ CO2_2076_2100_RCP85_CMIP6,
+        TRUE ~ NA_real_
+      )
     )
-  )
+}
 
-df <- df %>%
-  mutate(
-    CO2_ppm = case_when(
-      grepl("EUR", ensemble, ignore.case = TRUE) ~ CO2_1981_2005,
-      PERIOD == "1981_2005" ~ CO2_1981_2005,
-      PERIOD == "2076_2100" & ensemble == "CMIP5" ~ CO2_2076_2100_RCP85_CMIP5,
-      PERIOD == "2076_2100" & ensemble == "CMIP6" ~ CO2_2076_2100_RCP85_CMIP6,
-      TRUE ~ NA_real_
+if (.has_co2_meta_df) {
+  df <- df %>%
+    mutate(
+      CO2_ppm = case_when(
+        grepl("EUR", ensemble, ignore.case = TRUE) ~ CO2_1981_2005,
+        PERIOD == "1981_2005" ~ CO2_1981_2005,
+        PERIOD == "2076_2100" & ensemble == "CMIP5" ~ CO2_2076_2100_RCP85_CMIP5,
+        PERIOD == "2076_2100" & ensemble == "CMIP6" ~ CO2_2076_2100_RCP85_CMIP6,
+        TRUE ~ NA_real_
+      )
     )
-  )
+}
 
 # CO2 gate knobs:
 # - majority_frac: fraction of samples that must show monotone negative response
@@ -282,21 +288,24 @@ co2_regime_gate <- function(data, var = "CO2_term",
   stopifnot(var %in% names(data))
   stopifnot(length(co2_levels) >= 2)
   
-  # Predicted g_eff under each CO2 regime, with all other columns unchanged
+  # predictions for each CO2 level
   preds <- lapply(co2_levels, function(val) {
     d <- data
     d[[var]] <- val
     predict_geff_ET_full(d)$geff
   })
   
-  # Consecutive differences: should be <= tol for monotone non-increasing response
-  deltas <- Map(function(a, b) b - a, preds[-length(preds)], preds[-1])
+  # baseline is the FIRST level (we assume you pass 0 first)
+  g0 <- preds[[1]]
   
-  # Share of comparisons that are "negative enough"
-  frac_neg <- mean(unlist(lapply(deltas, function(d) d <= tol)), na.rm = TRUE)
+  # compare each elevated level to baseline (no need to order CMIP5 vs CMIP6)
+  deltas_vs0 <- lapply(preds[-1], function(gk) gk - g0)
   
-  # Mean overall change from lowest to highest CO2 regime
-  mean_total <- mean(preds[[length(preds)]] - preds[[1]], na.rm = TRUE)
+  # fraction of comparisons that are "negative enough" (gk <= g0 + tol)
+  frac_neg <- mean(unlist(lapply(deltas_vs0, function(d) d <= tol)), na.rm = TRUE)
+  
+  # mean total effect relative to baseline (average across elevated levels)
+  mean_total <- mean(unlist(deltas_vs0), na.rm = TRUE)
   
   list(
     frac_neg   = frac_neg,
@@ -336,9 +345,29 @@ if ("CO2_term" %in% rf_vars_present_geff) {
     )
     
     message(sprintf(
-      "CO2 regime gate: frac(monotone negative)=%.1f%%, mean Δg_eff(hi-low)=%.4g",
+      "CO2 gate: frac(Δg_eff<=tol)=%.1f%%, mean Δg_eff(vs 0)=%.4g",
       100 * gchk$frac_neg, gchk$mean_total
     ))
+    
+    # ---- DIAGNOSTIC: inspect deltas that drive the CO2 gate ----
+    preds_dbg <- lapply(co2_levels, function(val) {
+      d <- df_opt
+      d$CO2_term <- val
+      predict_geff_ET_full(d)$geff
+    })
+    
+    d5 <- preds_dbg[[2]] - preds_dbg[[1]]   # CMIP5 - 0
+    d6 <- preds_dbg[[3]] - preds_dbg[[1]]   # CMIP6 - 0
+    
+    message(sprintf("CO2 debug: CMIP5 vs 0  frac(d<=tol)=%.1f%%  mean(d)=%.4g",
+                    100 * mean(d5 <= co2_neg_total_tol, na.rm=TRUE),
+                    mean(d5, na.rm=TRUE)))
+    message(sprintf("CO2 debug: CMIP6 vs 0  frac(d<=tol)=%.1f%%  mean(d)=%.4g",
+                    100 * mean(d6 <= co2_neg_total_tol, na.rm=TRUE),
+                    mean(d6, na.rm=TRUE)))
+    
+    print(stats::quantile(d5, c(.05,.25,.5,.75,.95), na.rm=TRUE))
+    print(stats::quantile(d6, c(.05,.25,.5,.75,.95), na.rm=TRUE))
     
     # If the model implies non-physiological CO2 behavior, drop CO2_term and refit RF
     if (!isTRUE(gchk$pass)) {
@@ -552,8 +581,8 @@ perm_importance_full_model <- function(
       
       pred_p <- predict_geff_ET_full(dfp)
       
-      rmse_ET_p   <- sqrt(mean((dfp$ET    - pred_p$ET  )^2, na.rm = TRUE))
-      rmse_geff_p <- sqrt(mean((dfp$g_eff - pred_p$geff)^2, na.rm = TRUE))
+      rmse_ET_p   <- sqrt(mean((data$ET    - pred_p$ET  )^2, na.rm = TRUE))
+      rmse_geff_p <- sqrt(mean((data$g_eff - pred_p$geff)^2, na.rm = TRUE))
       
       # Importance = increase in RMSE caused by destroying predictor v
       dET[b]   <- rmse_ET_p   - base_rmse_ET
@@ -586,6 +615,74 @@ perm_full <- perm_importance_full_model(
 )
 
 print(perm_full %>% mutate(across(where(is.numeric), ~ round(.x, 3))))
+
+# ------------------------------------------------------------------------------
+# 9b) Decompose VPD permutation importance for ET into two pathways:
+#     - "stomatal channel": VPD -> g_param -> g_eff -> ET (K_ET held fixed)
+#     - "demand channel"  : VPD -> K_ET -> ET            (g_eff held fixed)
+#     - "full"            : VPD permuted normally (both channels affected)
+# ------------------------------------------------------------------------------
+
+perm_importance_VPD_channels_ET <- function(data, B = 200L, seed = 2024) {
+  # Baseline predictions
+  pred0 <- predict_geff_ET_full(data)
+  base_rmse_ET <- sqrt(mean((data$ET - pred0$ET)^2, na.rm = TRUE))
+  
+  # Cache baseline pieces
+  K0    <- recompute_K_ET(data)  # demand term from original data
+  geff0 <- pred0$geff            # conductance prediction from original data
+  
+  set.seed(seed)
+  d_full   <- numeric(B)  # VPD permuted everywhere (standard)
+  d_stom   <- numeric(B)  # VPD affects only g (K fixed)
+  d_demand <- numeric(B)  # VPD affects only K (g fixed)
+  
+  for (b in seq_len(B)) {
+    dfp <- data
+    dfp$VPD <- sample(dfp$VPD)
+    
+    # (1) FULL: permute VPD in inputs -> affects g_param (inside predict) AND K_ET
+    predp <- predict_geff_ET_full(dfp)
+    rmse_full <- sqrt(mean((data$ET - predp$ET)^2, na.rm = TRUE))
+    d_full[b] <- rmse_full - base_rmse_ET
+    
+    # (2) STOMATAL channel only: permute VPD, recompute g_eff, but keep K fixed at K0
+    geff_p <- predict_geff_ET_full(dfp)$geff
+    ET_stom <- K0 * geff_p
+    rmse_stom <- sqrt(mean((data$ET - ET_stom)^2, na.rm = TRUE))
+    d_stom[b] <- rmse_stom - base_rmse_ET
+    
+    # (3) DEMAND channel only: permute VPD, recompute K_ET, but keep g fixed at geff0
+    K_p <- recompute_K_ET(dfp)
+    ET_dem <- K_p * geff0
+    rmse_dem <- sqrt(mean((data$ET - ET_dem)^2, na.rm = TRUE))
+    d_demand[b] <- rmse_dem - base_rmse_ET
+  }
+  
+  tibble(
+    feature = "VPD",
+    channel = c("Full (g + K_ET)", "Via g_param (stomatal)", "Via K_ET (demand)"),
+    mean_delta_ET = c(mean(d_full, na.rm = TRUE),
+                      mean(d_stom, na.rm = TRUE),
+                      mean(d_demand, na.rm = TRUE)),
+    lo_ET = c(quantile(d_full, 0.05, na.rm = TRUE),
+              quantile(d_stom, 0.05, na.rm = TRUE),
+              quantile(d_demand, 0.05, na.rm = TRUE)),
+    hi_ET = c(quantile(d_full, 0.95, na.rm = TRUE),
+              quantile(d_stom, 0.95, na.rm = TRUE),
+              quantile(d_demand, 0.95, na.rm = TRUE)),
+    B = B
+  )
+}
+
+# Compute decomposition on the same dataset you use for permutation importance
+perm_vpd_channels <- perm_importance_VPD_channels_ET(
+  df_opt,
+  B = perm_B,
+  seed = if (exists("rng_seed")) rng_seed else 2024
+)
+
+print(perm_vpd_channels %>% mutate(across(where(is.numeric), ~ round(.x, 4))))
 
 # ------------------------------------------------------------------------------
 # 10) Importance barplots
@@ -622,6 +719,87 @@ if (!is.null(p_vip_geff)) {
   print(p_imp_full_geff)
 }
 print(p_imp_full_geff + p_imp_full_ET)
+
+write_csv(perm_full, "../outputs/perm_full.csv")
+
+# ------------------------------------------------------------------------------
+# 10b) Barplot for the VPD channel decomposition (ET)
+# ------------------------------------------------------------------------------
+
+p_imp_vpd_channels_ET <- ggplot(
+  perm_vpd_channels,
+  aes(x = reorder(channel, mean_delta_ET), y = mean_delta_ET)
+) +
+  geom_col() +
+  geom_errorbar(aes(ymin = lo_ET, ymax = hi_ET), width = 0.2) +
+  coord_flip() +
+  theme_bw() +
+  labs(
+    x = NULL,
+    y = expression(Delta * " RMSE_ET (permute VPD)"),
+    title = "VPD permutation importance decomposed by pathway (ET)",
+    subtitle = "Full vs stomatal-only (K fixed) vs demand-only (g fixed)"
+  )
+
+print(p_imp_vpd_channels_ET)
+
+# ------------------------------------------------------------------------------
+# 10c) Combine: replace "VPD" in perm_full with the 3 VPD channel rows (ET)
+# ------------------------------------------------------------------------------
+
+# 1) Take the non-VPD features from the original full-model importance
+perm_full_nonVPD_ET <- perm_full %>%
+  filter(feature != "VPD") %>%
+  transmute(
+    feature,
+    label = feature,
+    mean_delta_ET,
+    lo_ET,
+    hi_ET
+  )
+
+# 2) Turn VPD channels into rows that look like the others
+perm_vpd_channels_ET_for_plot <- perm_vpd_channels %>%
+  transmute(
+    feature = "VPD",
+    label   = paste0("VPD — ", channel),
+    mean_delta_ET,
+    lo_ET,
+    hi_ET
+  )
+
+# 3) Bind together
+perm_full_ET_combined <- bind_rows(
+  perm_vpd_channels_ET_for_plot,
+  perm_full_nonVPD_ET
+)
+
+# Optional: order by importance (descending)
+perm_full_ET_combined <- perm_full_ET_combined %>%
+  arrange(desc(mean_delta_ET))
+
+print(perm_full_ET_combined %>% mutate(across(where(is.numeric), ~ round(.x, 3))))
+
+# 4) Combined barplot (same style as your p_imp_full_ET)
+p_imp_full_ET_with_VPD_channels <- ggplot(
+  perm_full_ET_combined,
+  aes(x = reorder(label, mean_delta_ET), y = mean_delta_ET)
+) +
+  geom_col() +
+  geom_errorbar(aes(ymin = lo_ET, ymax = hi_ET), width = 0.2) +
+  coord_flip() +
+  theme_bw() +
+  labs(
+    x = NULL,
+    y = expression(Delta * " RMSE_ET (permute)"),
+    title = "Full-model variable importance for ET (with VPD pathway decomposition)",
+    subtitle = "VPD split into: full vs stomatal-only (K fixed) vs demand-only (g fixed)"
+  )
+
+print(p_imp_full_ET_with_VPD_channels)
+
+
+write_csv(perm_full_ET_combined, "../outputs/perm_full_ET_combined.csv")
 
 # ------------------------------------------------------------------------------
 # 11) Partial dependence plots (PDP)
@@ -709,3 +887,246 @@ p_pdp_ET <- ggplot(pdp_ET, aes(x = x, y = pd)) +
     subtitle = "Hybrid model"
   )
 print(p_pdp_ET)
+
+# ------------------------------------------------------------------------------
+# 12) ALE plots (Accumulated Local Effects) for the HYBRID model
+#     - computed directly from predict_geff_ET_full()
+#     - more reliable than PDP under correlated climate predictors
+#     - ALE (smoothed) — computed on final model predictors; CO2 optional
+#     - Molnar-style ALE with equal-frequency (quantile) bins
+#     - evaluate lo & hi in ONE predict call per bin (faster + stable)
+#     - LOESS smooth with weights = n_in_bin, then re-center
+# ------------------------------------------------------------------------------
+
+# Settings (you can tune)
+n_bins_ale      <- 50L
+smooth_span_ale <- 1.0     # ↑ smoother, ↓ more wiggles
+show_rug_ale    <- TRUE
+obs_max_points  <- 5000L
+
+.loess_pred <- function(y, x, w, span) {
+  fit <- try(
+    loess(y ~ x, weights = w, span = span,
+          control = loess.control(surface = "direct")),
+    silent = TRUE
+  )
+  if (inherits(fit, "try-error")) return(y)
+  as.numeric(predict(fit, data.frame(x = x)))
+}
+
+ale_one <- function(var, data, n_bins = 50L) {
+  stopifnot(var %in% names(data))
+  
+  z_all <- data[[var]]
+  z <- z_all[is.finite(z_all)]
+  if (!length(z)) stop("Variable ", var, " has no finite values.")
+  
+  edges <- as.numeric(quantile(z, probs = seq(0, 1, length.out = n_bins + 1), na.rm = TRUE))
+  edges[1] <- min(z, na.rm = TRUE)
+  edges[length(edges)] <- max(z, na.rm = TRUE)
+  
+  dET <- numeric(n_bins)
+  dG  <- numeric(n_bins)
+  cnt <- integer(n_bins)
+  
+  for (j in seq_len(n_bins)) {
+    lo <- edges[j]
+    hi <- edges[j + 1]
+    
+    idx <- which(z_all >= lo & (z_all < hi | (j == n_bins & z_all <= hi)))
+    cnt[j] <- length(idx)
+    if (!cnt[j]) { dET[j] <- 0; dG[j] <- 0; next }
+    
+    df_lo <- data[idx, , drop = FALSE]; df_lo[[var]] <- lo
+    df_hi <- data[idx, , drop = FALSE]; df_hi[[var]] <- hi
+    df_both <- rbind(df_lo, df_hi)
+    
+    pred_both <- predict_geff_ET_full(df_both)
+    
+    m <- cnt[j]
+    ET_lo <- pred_both$ET[seq_len(m)]
+    ET_hi <- pred_both$ET[(m + 1L):(2L * m)]
+    G_lo  <- pred_both$geff[seq_len(m)]
+    G_hi  <- pred_both$geff[(m + 1L):(2L * m)]
+    
+    dET[j] <- mean(ET_hi - ET_lo, na.rm = TRUE)
+    dG[j]  <- mean(G_hi  - G_lo,  na.rm = TRUE)
+  }
+  
+  # accumulate + center (standard ALE)
+  ale_ET <- cumsum(dET)
+  ale_G  <- cumsum(dG)
+  mids   <- (edges[-1] + edges[-length(edges)]) / 2
+  
+  N <- sum(cnt)
+  if (N > 0) {
+    ale_ET <- ale_ET - sum(ale_ET * cnt, na.rm = TRUE) / N
+    ale_G  <- ale_G  - sum(ale_G  * cnt, na.rm = TRUE) / N
+  }
+  
+  tibble(var = var, x = mids, ALE_ET = ale_ET, ALE_geff = ale_G, n_in_bin = cnt)
+}
+
+# Pick ALE variables: VPD + actual RF predictors used (CO2 only if kept)
+vars_for_ALE <- unique(c("VPD", rf_vars_present_geff))
+vars_for_ALE <- intersect(vars_for_ALE, names(df))
+stopifnot(length(vars_for_ALE) >= 1)
+
+# Compute raw ALE
+ale_raw <- bind_rows(lapply(vars_for_ALE, ale_one, data = df, n_bins = n_bins_ale))
+
+# Smooth (weighted LOESS), re-center, and anchor to mean prediction
+pred0 <- predict_geff_ET_full(df)
+mu_ET_pred   <- mean(pred0$ET,   na.rm = TRUE)
+mu_geff_pred <- mean(pred0$geff, na.rm = TRUE)
+
+ale_sm <- ale_raw %>%
+  group_by(var) %>%
+  mutate(
+    ALE_ET_s   = .loess_pred(ALE_ET,   x, n_in_bin, smooth_span_ale),
+    ALE_geff_s = .loess_pred(ALE_geff, x, n_in_bin, smooth_span_ale)
+  ) %>%
+  mutate(
+    # re-center after smoothing (ALE convention)
+    ALE_ET_s   = ALE_ET_s   - weighted.mean(ALE_ET_s,   w = n_in_bin, na.rm = TRUE),
+    ALE_geff_s = ALE_geff_s - weighted.mean(ALE_geff_s, w = n_in_bin, na.rm = TRUE),
+    
+    # anchored versions
+    ALE_ET_abs_s   = ALE_ET_s   + mu_ET_pred,
+    ALE_geff_abs_s = ALE_geff_s + mu_geff_pred
+  ) %>%
+  ungroup()
+
+# Observed overlay (downsample for speed)
+make_obs_pts <- function(ycol) {
+  out <- bind_rows(lapply(vars_for_ALE, function(v) {
+    tibble(var = v, x = df[[v]], y = df[[ycol]])
+  })) %>% filter(is.finite(x), is.finite(y))
+  
+  if (nrow(out) > obs_max_points) out <- out[sample.int(nrow(out), obs_max_points), , drop = FALSE]
+  out
+}
+obs_pts_ET   <- make_obs_pts("ET")
+obs_pts_geff <- make_obs_pts("g_eff")
+
+theme_base <- theme_bw() +
+  theme(axis.text.y = element_text(size = 10, colour = "black"),
+        axis.ticks.y = element_line())
+
+# Relative (smoothed, centered)
+p_ale_geff_rel <- ggplot(ale_sm, aes(x = x, y = ALE_geff_s)) +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = 0.4) +
+  geom_line(linewidth = 1) +
+  facet_wrap(~ var, scales = "free_x") +
+  labs(x = NULL, y = expression("ALE " * g[eff] * " (smoothed; centered)"),
+       title = expression("ALE (smoothed): " * g[eff] * " — relative")) +
+  theme_base
+
+p_ale_ET_rel <- ggplot(ale_sm, aes(x = x, y = ALE_ET_s)) +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = 0.4) +
+  geom_line(linewidth = 1) +
+  facet_wrap(~ var, scales = "free_x") +
+  labs(x = NULL, y = "ALE ET (smoothed; centered)",
+       title = "ALE (smoothed): ET — relative") +
+  theme_base
+
+if (isTRUE(show_rug_ale)) {
+  p_ale_geff_rel <- p_ale_geff_rel +
+    geom_rug(data = ale_raw, aes(x = x), inherit.aes = FALSE, sides = "b", alpha = 0.2)
+  p_ale_ET_rel <- p_ale_ET_rel +
+    geom_rug(data = ale_raw, aes(x = x), inherit.aes = FALSE, sides = "b", alpha = 0.2)
+}
+
+# Absolute (anchored) + observed overlay
+p_ale_geff_abs <- ggplot(ale_sm, aes(x = x, y = ALE_geff_abs_s)) +
+  geom_line(linewidth = 1) +
+  geom_point(data = obs_pts_geff, aes(x = x, y = y),
+             inherit.aes = FALSE, alpha = 0.15, size = 0.4) +
+  facet_wrap(~ var, scales = "free_x") +
+  labs(x = NULL, y = expression(g[eff] * " (anchored; smoothed)"),
+       title = expression("ALE (smoothed): " * g[eff] * " — anchored + observed")) +
+  theme_base
+
+p_ale_ET_abs <- ggplot(ale_sm, aes(x = x, y = ALE_ET_abs_s)) +
+  geom_line(linewidth = 1) +
+  geom_point(data = obs_pts_ET, aes(x = x, y = y),
+             inherit.aes = FALSE, alpha = 0.15, size = 0.4) +
+  facet_wrap(~ var, scales = "free_x") +
+  labs(x = NULL, y = "ET (anchored; smoothed)",
+       title = "ALE (smoothed): ET — anchored + observed") +
+  theme_base
+
+print(p_ale_geff_rel)
+print(p_ale_ET_rel)
+print(p_ale_geff_abs)
+print(p_ale_ET_abs)
+
+# Keep for bundle saving
+ale_raw_final <- ale_raw
+ale_sm_final  <- ale_sm
+
+
+# ==============================
+# Save bundle (hybrid g_eff + ET)
+# ==============================
+
+geff_vpd_hybrid_bundle <- list(
+  
+  # ---- metadata ----
+  metadata = if (exists("metadata")) {
+    paste0(metadata,
+           " | Hybrid g_eff model: parametric 1/sqrt(VPD) + RF residuals; ",
+           "ET = K_ET × g_eff; CO2 regime monotonicity gate; permutation importance.")
+  } else {
+    "Hybrid g_eff model: parametric 1/sqrt(VPD) + RF residuals; ET = K_ET × g_eff; CO2 regime monotonicity gate."
+  },
+  
+  # ---- parametric VPD law ----
+  b0_VPD = b_hat[["b0_VPD"]],
+  b1_VPD = b_hat[["b1_VPD"]],
+  
+  # ---- RF residual model ----
+  rf_geff_fit   = rf_geff,
+  rf_predictors = rf_vars_present_geff,
+  rf_params     = best_params_geff,
+  rf_oob_rmse   = base_oob_rmse_geff,
+  
+  # ---- predictions ----
+  output_df = output_df_geff,
+  
+  # ---- diagnostics ----
+  RMSE_param_geff = RMSE_param_geff,
+  R2_param_geff   = R2_param_geff,
+  RMSE_final_geff = RMSE_final_geff,
+  R2_final_geff   = R2_final_geff,
+  
+  RMSE_param_ET   = RMSE_param_ET,
+  R2_param_ET     = R2_param_ET,
+  RMSE_final_ET   = RMSE_final_ET,
+  R2_final_ET     = R2_final_ET,
+  
+  # ---- permutation importance ----
+  perm_full              = perm_full,
+  perm_vpd_channels_ET   = perm_vpd_channels,
+  perm_full_ET_combined  = perm_full_ET_combined,
+  
+  # ---- ALE ----
+  ale_raw = ale_raw_final,
+  ale_sm  = ale_sm_final,
+  
+  # ---- CO2 gate info ----
+  co2_gate = list(
+    majority_frac = co2_neg_majority_frac,
+    tol           = co2_neg_total_tol,
+    passed        = if (exists("gchk")) gchk$pass else NA,
+    frac_negative = if (exists("gchk")) gchk$frac_neg else NA,
+    mean_delta    = if (exists("gchk")) gchk$mean_total else NA
+  ),
+  
+  # ---- reproducibility ----
+  rng_seed = if (exists("rng_seed")) rng_seed else NA_integer_
+)
+
+# ---- save ----
+save(geff_vpd_hybrid_bundle, file = out_file)
+

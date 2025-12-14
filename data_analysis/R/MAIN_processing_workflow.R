@@ -2280,13 +2280,14 @@ bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(
 ## --- final stack ---
 final_figure <- grid.arrange(top_block, bottom_block, ncol = 1, heights = c(1, 0.8))
 
-grid.newpage(); grid.draw(final_figure)
+# grid.newpage(); grid.draw(final_figure)
 # ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
 ggsave("../plots/ggplot2/Domain_VPD_water_balance&atmosphere.png",
        plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
        # dpi = RES, units = "mm")
        dpi = 1200, units = "mm", bg = "white")
 
+graphics.off()
 #__________________________________________________________
 ###########################################################
 # Budyko curve components against VPD perturbation analysis
@@ -3075,11 +3076,17 @@ if(Fit_Jarvis){
   source("./src/Jarvis_model_min_max.R")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }else{
-  load("./RData/20250929_jarvis_objects.RData")
+  load("./RData/20251214_jarvis_objects.RData")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }
 source("./src/Jarvis_ALE_curves_smoothed_overlay.R")
-#source("./src/Jarvis_model_RF_optimize_ET.R")
+source("./src/Jarvis_permutation_importance.R")
+
+Fit_RF <- TRUE
+if(Fit_RF){
+  source("./src/RF_hybrid_vpd_constrained_geff_et.R")
+  list2env(geff_vpd_hybrid_bundle, envir = .GlobalEnv)
+}
 
 # Predicted ET vs. observed
 make_scatter_plot(data = jarvis_out  |>
