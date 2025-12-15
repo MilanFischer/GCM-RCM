@@ -39,8 +39,8 @@ use_VPD <- TRUE
 
 # VPD response handling
 fVPD_mode  <- "optimize"   # "given" or "optimize"
-b0_VPD_raw <- -12.613
-b1_VPD_raw <-  11.093
+b0_VPD_raw <- -6.909 # -12.613
+b1_VPD_raw <-  8.283 # 11.093
 
 # Optimizer settings
 trace_flag <- TRUE
@@ -54,7 +54,7 @@ clamp_Ta <- TRUE
 clamp_P  <- TRUE
 
 # Metadata / output
-metadata <- "Jarvis ET model (min–max factors + VPD + CO2). Universal bundle."
+metadata <- "Jarvis ET model (min–max factors + VPD + CO2). VPD not optimized."
 out_file <- "./RData/20251214_jarvis_objects.RData"
 
 # numeric guard (already set in preprocessing, but keep safe fallback)
@@ -170,6 +170,7 @@ if (fVPD_mode == "optimize") {
     k_CO2=0,
     b0_VPD=-5e4, b1_VPD=-5e4
   )
+  
   upper_all <- c(
     Rg_min=190, Rg_max=5000,
     Ta_min=20,  Ta_max=100,

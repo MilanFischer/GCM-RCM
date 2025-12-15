@@ -7,6 +7,7 @@ library(grid)
 library(patchwork)
 library(gridExtra)
 library(ggrepel)
+library(cowplot)
 # library(scales)
 # library(png)
 library(magick)
@@ -2808,8 +2809,12 @@ r2  <- summary(fit)$r.squared
 
 # Build a pretty, signed label with 2 decimals
 sign <- if (b1 >= 0) "+" else "−"
-eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
-                    b0, sign, abs(b1), r2)
+# eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
+#                     b0, sign, abs(b1), r2)
+eq_label <- sprintf(
+  "y = %.2f %s %.2f x\nR\u00B2 = %.2f",
+  b0, sign, abs(b1), r2
+)
 
 # 3) Add line + 95% CI and the equation label (top-left)
 plot_data <- ggplot_build(p_geff_sqrt_VPD_single_fit)
@@ -2826,7 +2831,8 @@ p_geff_sqrt_VPD_single_fit <- p_geff_sqrt_VPD_single_fit +
     color = "black", fill = "grey40", alpha = 0.25, linewidth = 0.6
   ) +
   annotate("text",
-           x = rescale(0.54, X_range), y = rescale(0.05, Y_range), label = eq_label,
+           # x = rescale(0.54, X_range), y = rescale(0.05, Y_range), label = eq_label,
+           x = rescale(0.15, X_range), y = rescale(0.60, Y_range), label = eq_label,
            hjust = 0, vjust = 0.5, size = 3.6)
 
 add_manual_legend <- function(p_geff_sqrt_VPD_single_fit, x1 = 0.80, x2 = 0.84, y1 = 0.75, y2 = 0.70){
@@ -2861,6 +2867,7 @@ if (length(idx_pts_txt)) {
 }
 
 ggsave('../plots/ggplot2/g_eff_versus_sqrt_VPD_single_fit_ggplot2_TIDY.png', plot = p_geff_sqrt_VPD_single_fit, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
 
 ###################################
 # g_eff vs. VPD ensemble-specif fit
@@ -3119,11 +3126,32 @@ res_rf <- run_ALE_plots(
   smooth_span = 0.5
 )
 
-# Extract from Jarvis bundle
+source("./src/Jarvis&RF_PDP_plots.R")
+
+res_j <- run_PDP_plots("./RData/20251214_jarvis_objects.RData")
+res_r <- run_PDP_plots("./RData/20251214_RF_objects.RData")
+
+pdp_jarvis <- res_j$pdp
+pdp_rf     <- res_r$pdp
+
+
+# Extract data frames from the Jarvis and RF bundle
 jarvis_out <- jarvis_bundle$output_df
+rf_out <- rf_hybrid_bundle$output_df
 
 
-ale_all_sm <- res_jarvis$ale_smoothed
+# Predicted ET vs. observed RF
+make_scatter_plot(data = rf_out  |>
+                    mutate(x = ET, y = ET_pred, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(400-16, 800+16), Y_range_man = c(400-16, 800+16),
+                  x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_vs_ET")
+
+# Save the plot
+ggsave('../plots/ggplot2/ET_predicted_vs_ET_RF.png', plot = ET_predicted_vs_ET, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+cor.test(rf_out$ET, rf_out$ET_pred)
 
 # Predicted ET vs. observed
 make_scatter_plot(data = jarvis_out  |>
@@ -3139,6 +3167,19 @@ ggsave('../plots/ggplot2/ET_predicted_vs_ET.png', plot = ET_predicted_vs_ET, wid
 cor.test(jarvis_out$ET, jarvis_out$ET_pred)
 
 # Predicted geff vs. observed
+make_scatter_plot(data = rf_out |>
+                    select(g_eff, g_eff_pred, ensemble, color, fill, border, shape, model, linetype) |> 
+                    rename(x = "g_eff", y = "g_eff_pred"),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(1-0.52, 14+0.52), Y_range_man = c(1-0.52, 14+0.52),
+                  x_lab = bquote(g_eff),  y_lab = bquote("g"["eff predicted"]),
+                  hline = FALSE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="geff_predicted_vs_geff_RF")
+
+# Save the plot
+ggsave('../plots/ggplot2/geff_predicted_vs_geff_RF.png', plot = geff_predicted_vs_geff_RF, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+cor.test(jarvis_out$g_eff, jarvis_out$g_eff_pred)
+
+# Predicted geff vs. observed
 make_scatter_plot(data = jarvis_out |>
                     select(g_eff, g_eff_pred, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "g_eff", y = "g_eff_pred"),
@@ -3151,6 +3192,51 @@ make_scatter_plot(data = jarvis_out |>
 ggsave('../plots/ggplot2/geff_predicted_vs_geff.png', plot = geff_predicted_vs_geff, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 cor.test(jarvis_out$g_eff, jarvis_out$g_eff_pred)
 
+
+# Predicted ET vs. VPD
+make_scatter_plot(data = rf_out |>
+                    select(VPD, ET, ensemble, color, fill, border, shape, model, linetype) |> 
+                    rename(x = "VPD", y = "ET"),
+                  FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, Y_range_man = c(384, 816),
+                  x_lab = bquote("VPD (kPa)"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
+                  hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="ET_predicted_vs_VPD_AFFM")
+
+VPD_vect <- seq(min(rf_out$VPD, na.rm = TRUE), max(rf_out$VPD, na.rm = TRUE), 0.001)
+
+
+K_ET_T_avg <- (rhoAir * CpAir / gamma) * VPD_vect * (1/1000) *
+  1 / ((2.501e6 - 2361 * T_avg) / 1e6) * (3600 * 24) / 1e6 * 365.25
+
+AFFM <- K_ET_T_avg * (b0 + b1 / sqrt(VPD_vect))
+
+# VPD critical:
+# -- numerically
+VPD_vect[which.max(AFFM)]
+# -- analytically
+VPD_at_AFFM_peak <- b1^2 / (4 * b0^2)
+
+ET_predicted_vs_VPD_AFFM <- ET_predicted_vs_VPD_AFFM +
+  geom_vline(xintercept = VPD_at_AFFM_peak, 
+             colour = "grey35", linetype = "dashed", linewidth = 0.25) +
+  geom_line(
+    data = tibble(VPD = VPD_vect, ET = AFFM),
+    aes(x = VPD, y = ET),
+    color = "black",
+    linetype = "solid",
+    linewidth = 0.5
+  )
+
+ET_predicted_vs_VPD_AFFM <- put_line_behind(ET_predicted_vs_VPD_AFFM)
+
+# Save the plot
+ggsave('../plots/ggplot2/ET_vs_VPD_AFFM.png', plot = ET_predicted_vs_VPD_AFFM, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# ------------------------------------------------------------------------------
+# Extract ALE data
+# ale_all_sm <- res_jarvis$ale_smoothed
+ale_all_sm <- res_rf$ale_smoothed
+
 # Predicted ET vs. VPD
 make_scatter_plot(data = jarvis_out |>
                     select(VPD, ET, ensemble, color, fill, border, shape, model, linetype) |> 
@@ -3159,7 +3245,6 @@ make_scatter_plot(data = jarvis_out |>
                   x_lab = bquote("VPD (kPa)"),  y_lab = bquote("ET (mm yr"^"-1"*")"),
                   hline = TRUE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
                   save_ggplot2_obj_as="ET_predicted_vs_VPD")
-
 
 VPD_at_ET_peak <- ale_all_sm |> 
   filter(var == "VPD") |> 
@@ -3268,19 +3353,203 @@ ET_predicted_vs_P <- put_line_behind(ET_predicted_vs_P)
 # Save the plot
 ggsave('../plots/ggplot2/ET_vs_P_ALE.png', plot = ET_predicted_vs_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
+# ------------------------------------------------------------------------------
+# Permutation insets
+make_perm_inset <- function(csv_path,
+                            response = c("geff","ET"),
+                            order = c("VPD","P","Ta","Rg","CO2_term"),
+                            q_lo = 0.25, q_hi = 0.75) {
+  
+  response <- match.arg(response)
+  
+  df <- readr::read_csv(csv_path, show_col_types = FALSE)
+  
+  # -----------------------
+  # Pick delta columns
+  # -----------------------
+  if (response == "geff") {
+    med <- df$med_delta_geff
+    lo  <- df$lo_geff
+    hi  <- df$hi_geff
+  } else {
+    med <- df$med_delta_ET
+    lo  <- df$lo_ET
+    hi  <- df$hi_ET
+  }
+  
+  # -----------------------
+  # Option A normalization (share of total ΔRMSE)
+  # -----------------------
+  den <- sum(pmax(med, 0), na.rm = TRUE)
+  
+  df2 <- df |>
+    dplyr::mutate(
+      feature = factor(feature, levels = order),
+      share    = 100 * pmax(med, 0) / den,
+      share_lo = 100 * pmax(lo,  0) / den,
+      share_hi = 100 * pmax(hi,  0) / den
+    ) |>
+    dplyr::filter(!is.na(feature)) |>
+    dplyr::arrange(dplyr::desc(share))
+  
+  # -----------------------
+  # Expression-style labels (IMPORTANT PART)
+  # -----------------------
+  label_map <- c(
+    VPD      = "VPD",
+    P        = "P",
+    Ta       = "T[a]",
+    Rg       = "R[g]",
+    CO2_term = "CO[2]"
+  )
+  
+  df2$lab <- unname(label_map[as.character(df2$feature)])
+  
+  # -----------------------
+  # Plot
+  # -----------------------
+  ggplot2::ggplot(df2, ggplot2::aes(x = reorder(lab, share), y = share)) +
+    ggplot2::geom_col(width = 0.75) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(ymin = share_lo, ymax = share_hi),
+      width = 0.15, linewidth = 0.3
+    ) +
+    ggplot2::coord_flip() +
+    ggplot2::scale_x_discrete(labels = function(x) parse(text = x)) +  # <-- enables subscripts
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      axis.text.y = ggplot2::element_text(size = 7, colour = "#222222"),
+      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
+      panel.background = ggplot2::element_rect(fill = "white", colour = NA),
+      plot.margin = ggplot2::margin(2,2,2,2)
+    ) +
+    ggplot2::labs(y = NULL, x = NULL)
+}
+
+make_perm_inset_ET_vpd_channels <- function(summary_csv,
+                                            vpd_channels_csv,
+                                            order = c("VPD[demand]","VPD[stomatal]","P","Ta","Rg","CO2_term"),
+                                            q_lo = 0.25, q_hi = 0.75) {
+  
+  # -----------------------
+  # Read CSVs
+  # -----------------------
+  s <- readr::read_csv(summary_csv, show_col_types = FALSE)
+  v <- readr::read_csv(vpd_channels_csv, show_col_types = FALSE)
+  
+  # -----------------------
+  # Non-VPD features
+  # -----------------------
+  nonvpd <- s |>
+    dplyr::filter(feature %in% c("P","Ta","Rg","CO2_term")) |>
+    dplyr::transmute(
+      key = feature,
+      med = med_delta_ET,
+      lo  = lo_ET,
+      hi  = hi_ET
+    )
+  
+  # -----------------------
+  # VPD channels
+  # -----------------------
+  vpdch <- v |>
+    dplyr::transmute(
+      key = channel,          # "VPD[demand]" / "VPD[stomatal]"
+      med = med_delta_ET,
+      lo  = lo_ET,
+      hi  = hi_ET
+    )
+  
+  # -----------------------
+  # Combine
+  # -----------------------
+  df <- dplyr::bind_rows(vpdch, nonvpd) |>
+    dplyr::mutate(
+      key = factor(as.character(key), levels = order)
+    ) |>
+    dplyr::filter(!is.na(key))
+  
+  # -----------------------
+  # Option A normalization (share of total ΔRMSE)
+  # -----------------------
+  den <- sum(pmax(df$med, 0), na.rm = TRUE)
+  
+  df <- df |>
+    dplyr::mutate(
+      share    = 100 * pmax(med, 0) / den,
+      share_lo = 100 * pmax(lo,  0) / den,
+      share_hi = 100 * pmax(hi,  0) / den
+    ) |>
+    dplyr::arrange(dplyr::desc(share))
+  
+  # -----------------------
+  # Expression-style labels (THIS IS THE IMPORTANT PART)
+  # -----------------------
+  label_map <- c(
+    "VPD[demand]"   = "VPD[demand]",
+    "VPD[stomatal]" = "VPD[stomatal]",
+    P               = "P",
+    Ta              = "T[a]",
+    Rg              = "R[g]",
+    CO2_term        = "CO[2]"
+  )
+  
+  df$lab <- unname(label_map[as.character(df$key)])
+  
+  # -----------------------
+  # Plot
+  # -----------------------
+  ggplot2::ggplot(df, ggplot2::aes(x = reorder(lab, share), y = share)) +
+    ggplot2::geom_col(width = 0.75) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(ymin = share_lo, ymax = share_hi),
+      width = 0.15, linewidth = 0.3
+    ) +
+    ggplot2::coord_flip() +
+    ggplot2::scale_x_discrete(labels = function(x) parse(text = x)) +  # <-- parses subscripts
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      axis.text.y = ggplot2::element_text(size = 7, colour = "#222222"),
+      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
+      panel.background = ggplot2::element_rect(fill = "white", colour = NA),
+      plot.margin = ggplot2::margin(2,2,2,2)
+    )
+}
+
+inset_geff <- make_perm_inset(
+  csv_path = "../outputs/perm_rf_hybrid_vpd_constrained_fit_summary.csv",
+  response = "geff"
+)
+
+inset_ET <- make_perm_inset(
+  csv_path = "../outputs/perm_rf_hybrid_vpd_constrained_fit_summary.csv",
+  response = "ET"
+)
+
+# inset_ET <- make_perm_inset_ET_vpd_channels(
+#   summary_csv      = "../outputs/perm_rf_hybrid_vpd_constrained_fit_summary.csv",
+#   vpd_channels_csv = "../outputs/perm_rf_hybrid_vpd_constrained_VPD_channels_ET_summary.csv"
+# )
+
+pA_inset <- ggdraw(pA) +
+  draw_plot(inset_geff, x = 0.7, y = 0.13, width = 0.28, height = 0.28)
+
+pB_inset <- ggdraw(pB) +
+  draw_plot(inset_ET,   x = 0.7, y = 0.7, width = 0.28, height = 0.28)
+
 #--------------
 # Combined plot
 
 # Optional but helps: tiny, identical plot margins
 tight <- theme(plot.margin = margin(3,3,3,3))
 pA <- p_geff_sqrt_VPD_single_fit + tight
-pB <- ET_predicted_vs_VPD + tight
+pB <- ET_predicted_vs_VPD_AFFM + tight
 pC <- ET_predicted_vs_Rg + tight
 pD <- ET_predicted_vs_Ta   + tight
 pE <- ET_predicted_vs_P  + tight
 
 # (2) Align *all five* first; keep all four sides ('tblr')
-aligned <- cowplot::align_plots(pA, pB, pC, pD, pE, align = "hv", axis = "tblr")
+aligned <- cowplot::align_plots(pA_inset, pB_inset, pC, pD, pE, align = "hv", axis = "tblr")
 
 # (3) Build rows from the aligned grobs
 # --- top row with spacing between A and B ---

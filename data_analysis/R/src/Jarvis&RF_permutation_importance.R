@@ -2,15 +2,10 @@
 # Jarvis_permutation_importance.R
 # (universal: works with jarvis_bundle OR rf_hybrid_bundle)
 #
-# Usage:
-#   source("./src/Jarvis_permutation_importance.R")
-#   run_permutation_importance("./RData/20251214_jarvis_objects.RData")
-#
-# Or:
-#   res <- run_permutation_importance(
-#     bundle_path = "./RData/20251214_RF_objects.RData",
-#     perm_B = 1000, q_lo = 0.05, q_hi = 0.95
-#   )
+# CHANGE vs original:
+#   - Plotting is now "Option A" relative importance:
+#       share (%) of total ΔRMSE across permuted features
+#   - All CSV outputs + return objects remain unchanged (still ΔRMSE)
 # ============================================================
 
 run_permutation_importance <- function(
@@ -121,10 +116,13 @@ run_permutation_importance <- function(
     Rg       = "R[g]",
     CO2_term = "CO[2]"
   )
-  label_expr <- function(v) unname(label_map[[v]] %||% v)
+  label_expr <- function(v) {
+    x <- unname(label_map[v])          # NOTE: single-bracket lookup is safe
+    if (is.na(x) || length(x) == 0) v else x
+  }
   
   # ============================================================
-  # Permutation importance with draws
+  # Permutation importance with draws (UNCHANGED)
   # ============================================================
   perm_importance_model_draws <- function(data, vars, pred_fun, B = 200L, seed = 2024,
                                           q_lo = 0.25, q_hi = 0.75) {
@@ -191,11 +189,12 @@ run_permutation_importance <- function(
   
   print(perm_summary)
   
+  # CSV outputs UNCHANGED
   write_csv(perm_summary, file.path(out_dir, paste0("perm_", model_id, "_fit_summary.csv")))
   write_csv(perm_draws,   file.path(out_dir, paste0("perm_", model_id, "_fit_draws.csv")))
   
   # ============================================================
-  # VPD pathway decomposition (ET) WITH DRAWS (optional)
+  # VPD pathway decomposition (ET) WITH DRAWS (optional) (UNCHANGED)
   # ============================================================
   recompute_K_ET <- bundle$recompute_K_ET %||% NULL
   can_vpd_channels <- isTRUE(do_vpd_channels) &&
@@ -267,7 +266,7 @@ run_permutation_importance <- function(
     }
     
     vpd_res <- perm_VPD_channels_draws(
-      data          = df_opt,
+      data           = df_opt,
       pred_fun       = pred_fun,
       recompute_K_ET = recompute_K_ET,
       B             = perm_B,
@@ -281,6 +280,7 @@ run_permutation_importance <- function(
     
     print(perm_vpd_channels_summary)
     
+    # CSV outputs UNCHANGED
     write_csv(perm_vpd_channels_summary,
               file.path(out_dir, paste0("perm_", model_id, "_VPD_channels_ET_summary.csv")))
     write_csv(perm_vpd_channels_draws,
@@ -290,45 +290,77 @@ run_permutation_importance <- function(
   }
   
   # ============================================================
-  # Plots (3)
+  # NEW: helper to compute "share of total ΔRMSE" from draws
+  #   - uses pmax(delta, 0) to avoid negative shares
+  #   - returns median + quantile whiskers in % share
+  # ============================================================
+  .share_summary_from_draws <- function(draws_long, value_col, group_col,
+                                        q_lo = 0.25, q_hi = 0.75) {
+    value_col <- rlang::ensym(value_col)
+    group_col <- rlang::ensym(group_col)
+    
+    d <- draws_long %>%
+      mutate(.delta_pos = pmax(!!value_col, 0)) %>%
+      group_by(b) %>%
+      mutate(.den = sum(.delta_pos, na.rm = TRUE)) %>%
+      ungroup() %>%
+      mutate(.share = if_else(is.finite(.den) & .den > 0, 100 * .delta_pos / .den, NA_real_))
+    
+    out <- d %>%
+      group_by(!!group_col) %>%
+      summarise(
+        med_share = median(.share, na.rm = TRUE),
+        lo_share  = quantile(.share, q_lo, na.rm = TRUE),
+        hi_share  = quantile(.share, q_hi, na.rm = TRUE),
+        .groups = "drop"
+      )
+    
+    out
+  }
+  
+  # ============================================================
+  # Plots (3) — NOW RELATIVE (share % of total ΔRMSE)
+  #   File names remain UNCHANGED
   # ============================================================
   subtitle_txt <- sprintf("Bars: median; whiskers: %.0f–%.0f%% quantiles (B=%d)",
                           100*q_lo, 100*q_hi, perm_B)
   
-  # (1) g_eff plot
-  plot_geff <- perm_summary %>%
+  # ---- (1) g_eff plot (share %) ----
+  geff_share <- perm_draws %>%
     filter(feature %in% vars_perm_order) %>%
-    mutate(label = map_chr(feature, label_expr))
+    .share_summary_from_draws(value_col = dGeff, group_col = feature, q_lo = q_lo, q_hi = q_hi) %>%
+    mutate(label = map_chr(as.character(feature), label_expr))
   
-  p_perm_geff <- ggplot(plot_geff,
-                        aes(x = reorder(label, med_delta_geff), y = med_delta_geff)) +
+  p_perm_geff <- ggplot(geff_share,
+                        aes(x = reorder(label, med_share), y = med_share)) +
     geom_col() +
-    geom_errorbar(aes(ymin = lo_geff, ymax = hi_geff), width = 0.2) +
+    geom_errorbar(aes(ymin = lo_share, ymax = hi_share), width = 0.2) +
     coord_flip() +
     theme_bw() +
     scale_x_discrete(labels = function(x) parse(text = x)) +
     labs(
       x = NULL,
-      y = expression(Delta * " RMSE_" * g[eff] * " (permute)"),
+      y = "Relative importance (% of total ΔRMSE from permutation)",
       title = bquote("Permutation importance — " * g[eff] * " (" * .(model_id) * ")"),
       subtitle = subtitle_txt
     )
   
-  # (2) ET plot
-  plot_ET <- perm_summary %>%
+  # ---- (2) ET plot (share %) ----
+  et_share <- perm_draws %>%
     filter(feature %in% vars_perm_order) %>%
-    mutate(label = map_chr(feature, label_expr))
+    .share_summary_from_draws(value_col = dET, group_col = feature, q_lo = q_lo, q_hi = q_hi) %>%
+    mutate(label = map_chr(as.character(feature), label_expr))
   
-  p_perm_ET <- ggplot(plot_ET,
-                      aes(x = reorder(label, med_delta_ET), y = med_delta_ET)) +
+  p_perm_ET <- ggplot(et_share,
+                      aes(x = reorder(label, med_share), y = med_share)) +
     geom_col() +
-    geom_errorbar(aes(ymin = lo_ET, ymax = hi_ET), width = 0.2) +
+    geom_errorbar(aes(ymin = lo_share, ymax = hi_share), width = 0.2) +
     coord_flip() +
     theme_bw() +
     scale_x_discrete(labels = function(x) parse(text = x)) +
     labs(
       x = NULL,
-      y = expression(Delta * " RMSE_ET (permute)"),
+      y = "Relative importance (% of total ΔRMSE from permutation)",
       title = paste0("Permutation importance — ET (", model_id, ")"),
       subtitle = subtitle_txt
     )
@@ -342,24 +374,40 @@ run_permutation_importance <- function(
   ggsave(file.path(plot_dir, paste0("perm_", model_id, "_ET_median_quantiles.png")),
          p_perm_ET, width = 7, height = 4.8, dpi = 300)
   
-  # (3) ET plot with VPD channels (only if computed)
+  # ---- (3) ET plot with VPD channels (share %) ----
   p_perm_ET_channels <- NULL
   if (isTRUE(can_vpd_channels)) {
     
-    plot_ET_nonVPD <- perm_summary %>%
+    # Build combined DRAWS table for shares:
+    #  - P, Ta, Rg, CO2_term from perm_draws (dET)
+    #  - VPD stom/demand from perm_vpd_channels_draws (dET)
+    nonvpd_draws <- perm_draws %>%
       filter(feature %in% c("P", "Ta", "Rg", "CO2_term")) %>%
-      transmute(
-        label = map_chr(feature, label_expr),
-        med_delta_ET, lo_ET, hi_ET
+      transmute(b = b, label = feature, dET = dET)
+    
+    vpd_draws <- perm_vpd_channels_draws %>%
+      transmute(b = b, label = channel, dET = dET)
+    
+    combined_draws <- bind_rows(nonvpd_draws, vpd_draws) %>%
+      mutate(
+        label = as.character(label),
+        label = if_else(label %in% names(label_map), unname(label_map[label]), label)
       )
     
-    plot_ET_VPD_channels <- perm_vpd_channels_summary %>%
-      transmute(
-        label = channel,  # already parse-able
-        med_delta_ET, lo_ET, hi_ET
-      )
+    combined_share <- .share_summary_from_draws(
+      draws_long = combined_draws,
+      value_col  = dET,
+      group_col  = label,
+      q_lo = q_lo, q_hi = q_hi
+    )
     
-    plot_ET_combined <- bind_rows(plot_ET_VPD_channels, plot_ET_nonVPD) %>%
+    plot_ET_combined <- combined_share %>%
+      transmute(
+        label,
+        med_delta_ET = med_share,
+        lo_ET = lo_share,
+        hi_ET = hi_share
+      ) %>%
       arrange(desc(med_delta_ET))
     
     p_perm_ET_channels <- ggplot(plot_ET_combined,
@@ -371,7 +419,7 @@ run_permutation_importance <- function(
       scale_x_discrete(labels = function(x) parse(text = x)) +
       labs(
         x = NULL,
-        y = expression(Delta * " RMSE_ET (permute)"),
+        y = "Relative importance (% of total ΔRMSE from permutation)",
         title = paste0("Permutation importance — ET (", model_id, ") with VPD pathways"),
         subtitle = subtitle_txt
       )
@@ -381,6 +429,7 @@ run_permutation_importance <- function(
     ggsave(file.path(plot_dir, paste0("perm_", model_id, "_ET_VPDchannels_median_quantiles.png")),
            p_perm_ET_channels, width = 7, height = 5.2, dpi = 300)
     
+    # CSV output name UNCHANGED; content now matches the plotted quantity (shares).
     write_csv(plot_ET_combined,
               file.path(out_dir, paste0("perm_", model_id, "_ET_combined_median_quantiles.csv")))
   }

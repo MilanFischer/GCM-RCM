@@ -386,33 +386,37 @@ if ("CO2_term" %in% rf_vars_present_geff) {
 
 pred_full <- predict_geff_ET_full(df)
 
-output_df_geff <- df |>
+output_df <- df |>
   mutate(
-    g_param     = g_param_full,
-    ET_vpd_hat  = ET_vpd_hat,
-    g_eff_final = pred_full$geff,
-    ET_final    = pred_full$ET
+    # keep your components/diagnostics
+    g_param    = g_param_full,
+    ET_vpd_hat = ET_vpd_hat,
+    
+    # Jarvis-style harmonized names (downstream scripts expect these)
+    g_eff_pred = pred_full$geff,
+    ET_pred    = pred_full$ET,
+    ET_resid   = ET - ET_pred
   )
 
-RMSE_param_geff <- sqrt(mean((output_df_geff$g_eff - output_df_geff$g_param)^2, na.rm = TRUE))
-R2_param_geff   <- suppressWarnings(cor(output_df_geff$g_eff, output_df_geff$g_param, use = "complete.obs")^2)
+RMSE_param_geff <- sqrt(mean((output_df$g_eff - output_df$g_param)^2, na.rm = TRUE))
+R2_param_geff   <- suppressWarnings(cor(output_df$g_eff, output_df$g_param, use = "complete.obs")^2)
 
-RMSE_final_geff <- sqrt(mean((output_df_geff$g_eff - output_df_geff$g_eff_final)^2, na.rm = TRUE))
-R2_final_geff   <- suppressWarnings(cor(output_df_geff$g_eff, output_df_geff$g_eff_final, use = "complete.obs")^2)
+RMSE_pred_geff <- sqrt(mean((output_df$g_eff - output_df$g_eff_pred)^2, na.rm = TRUE))
+R2_pred_geff   <- suppressWarnings(cor(output_df$g_eff, output_df$g_eff_pred, use = "complete.obs")^2)
 
-RMSE_param_ET <- sqrt(mean((output_df_geff$ET - output_df_geff$ET_vpd_hat)^2, na.rm = TRUE))
-R2_param_ET   <- suppressWarnings(cor(output_df_geff$ET, output_df_geff$ET_vpd_hat, use = "complete.obs")^2)
+RMSE_param_ET <- sqrt(mean((output_df$ET - output_df$ET_vpd_hat)^2, na.rm = TRUE))
+R2_param_ET   <- suppressWarnings(cor(output_df$ET, output_df$ET_vpd_hat, use = "complete.obs")^2)
 
-RMSE_final_ET <- sqrt(mean((output_df_geff$ET - output_df_geff$ET_final)^2, na.rm = TRUE))
-R2_final_ET   <- suppressWarnings(cor(output_df_geff$ET, output_df_geff$ET_final, use = "complete.obs")^2)
+RMSE_pred_ET <- sqrt(mean((output_df$ET - output_df$ET_pred)^2, na.rm = TRUE))
+R2_pred_ET   <- suppressWarnings(cor(output_df$ET, output_df$ET_pred, use = "complete.obs")^2)
 
 message(sprintf(
   "g_eff — Stage1(VPD-only): RMSE=%.3f, R^2=%.3f  |  Full: RMSE=%.3f, R^2=%.3f",
-  RMSE_param_geff, R2_param_geff, RMSE_final_geff, R2_final_geff
+  RMSE_param_geff, R2_param_geff, RMSE_pred_geff, R2_pred_geff
 ))
 message(sprintf(
   "ET    — Stage1(VPD-only): RMSE=%.3f, R^2=%.3f  |  Full: RMSE=%.3f, R^2=%.3f",
-  RMSE_param_ET, R2_param_ET, RMSE_final_ET, R2_final_ET
+  RMSE_param_ET, R2_param_ET, RMSE_pred_ET, R2_pred_ET
 ))
 
 # --------------------------------------------------------------------------
@@ -476,15 +480,15 @@ rf_hybrid_bundle <- list(
   co2_gate = co2_gate_info,
   
   # outputs + diagnostics
-  output_df      = output_df_geff,
+  output_df       = output_df,
   RMSE_param_geff = RMSE_param_geff,
   R2_param_geff   = R2_param_geff,
-  RMSE_final_geff = RMSE_final_geff,
-  R2_final_geff   = R2_final_geff,
+  RMSE_pred_geff = RMSE_pred_geff,
+  R2_pred_geff   = R2_pred_geff,
   RMSE_param_ET   = RMSE_param_ET,
   R2_param_ET     = R2_param_ET,
-  RMSE_final_ET   = RMSE_final_ET,
-  R2_final_ET     = R2_final_ET,
+  RMSE_pred_ET   = RMSE_pred_ET,
+  R2_pred_ET     = R2_pred_ET,
   
   # reproducibility
   rng_seed     = rng_seed,
