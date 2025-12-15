@@ -3079,18 +3079,55 @@ if(Fit_Jarvis){
   load("./RData/20251214_jarvis_objects.RData")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }
-source("./src/Jarvis_ALE_curves_smoothed_overlay.R")
-source("./src/Jarvis_permutation_importance.R")
 
-Fit_RF <- TRUE
+Fit_RF <- FALSE
 if(Fit_RF){
   source("./src/RF_hybrid_vpd_constrained_geff_et.R")
-  list2env(geff_vpd_hybrid_bundle, envir = .GlobalEnv)
+  list2env(rf_hybrid_bundle, envir = .GlobalEnv)
+}else{
+  load("./RData/20251214_RF_objects.RData")
+  list2env(rf_hybrid_bundle, envir = .GlobalEnv)
 }
+
+source("./src/Jarvis&RF_permutation_importance.R")
+
+run_permutation_importance(
+  bundle_path = "./RData/20251214_jarvis_objects.RData",
+  perm_B = 1000,
+  q_lo = 0.25,
+  q_hi = 0.75
+)
+
+run_permutation_importance(
+  bundle_path = "./RData/20251214_RF_objects.RData",
+  perm_B = 1000,
+  q_lo = 0.25,
+  q_hi = 0.75
+)
+
+source("./src/Jarvis&RF_ALE_plots.R")
+
+res_jarvis <- run_ALE_plots(
+  bundle_path = "./RData/20251214_jarvis_objects.RData",
+  n_bins = 50,
+  smooth_span = 0.5
+)
+
+res_rf <- run_ALE_plots(
+  bundle_path = "./RData/20251214_RF_objects.RData",
+  n_bins = 50,
+  smooth_span = 0.5
+)
+
+# Extract from Jarvis bundle
+jarvis_out <- jarvis_bundle$output_df
+
+
+ale_all_sm <- res_jarvis$ale_smoothed
 
 # Predicted ET vs. observed
 make_scatter_plot(data = jarvis_out  |>
-                    mutate(x = ET, y = ET_predicted, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
+                    mutate(x = ET, y = ET_pred, ensemble = interaction(ensemble, PERIOD, drop = TRUE)) |>
                     select(ensemble, model, color, fill, border, shape, linetype, x, y),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(400-16, 800+16), Y_range_man = c(400-16, 800+16),
                   x_lab = bquote(ET),  y_lab = bquote("ET"["eff predicted"]),
@@ -3099,12 +3136,12 @@ make_scatter_plot(data = jarvis_out  |>
 
 # Save the plot
 ggsave('../plots/ggplot2/ET_predicted_vs_ET.png', plot = ET_predicted_vs_ET, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-cor.test(jarvis_out$ET, jarvis_out$ET_predicted)
+cor.test(jarvis_out$ET, jarvis_out$ET_pred)
 
 # Predicted geff vs. observed
 make_scatter_plot(data = jarvis_out |>
-                    select(g_eff, g_eff_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
-                    rename(x = "g_eff", y = "g_eff_predicted"),
+                    select(g_eff, g_eff_pred, ensemble, color, fill, border, shape, model, linetype) |> 
+                    rename(x = "g_eff", y = "g_eff_pred"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04, X_range_man = c(1-0.52, 14+0.52), Y_range_man = c(1-0.52, 14+0.52),
                   x_lab = bquote(g_eff),  y_lab = bquote("g"["eff predicted"]),
                   hline = FALSE, vline = FALSE, one_to_one_line = TRUE, robust_regression = TRUE,
@@ -3112,7 +3149,7 @@ make_scatter_plot(data = jarvis_out |>
 
 # Save the plot
 ggsave('../plots/ggplot2/geff_predicted_vs_geff.png', plot = geff_predicted_vs_geff, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
-cor.test(jarvis_out$g_eff, jarvis_out$g_eff_predicted)
+cor.test(jarvis_out$g_eff, jarvis_out$g_eff_pred)
 
 # Predicted ET vs. VPD
 make_scatter_plot(data = jarvis_out |>
@@ -3288,15 +3325,15 @@ jarvis_out |>
 
 ################################################################################
 
-Rg_min    <- jarvis_bundle$jarvis_pars["Rg_min"]
-Rg_max    <- jarvis_bundle$jarvis_pars["Rg_max"]
-Ta_min    <- jarvis_bundle$jarvis_pars["Ta_min"]
-Ta_max    <- jarvis_bundle$jarvis_pars["Ta_max"]
-P_min     <- jarvis_bundle$jarvis_pars["P_min"]
-P_max     <- jarvis_bundle$jarvis_pars["P_max"]
-k_CO2     <- jarvis_bundle$jarvis_pars["k_CO2"]
-b0_VPD    <- jarvis_bundle$jarvis_pars["b0_VPD"]
-b1_VPD    <- jarvis_bundle$jarvis_pars["b1_VPD"]
+Rg_min    <- jarvis_bundle$par_hat["Rg_min"]
+Rg_max    <- jarvis_bundle$par_hat["Rg_max"]
+Ta_min    <- jarvis_bundle$par_hat["Ta_min"]
+Ta_max    <- jarvis_bundle$par_hat["Ta_max"]
+P_min     <- jarvis_bundle$par_hat["P_min"]
+P_max     <- jarvis_bundle$par_hat["P_max"]
+k_CO2     <- jarvis_bundle$par_hat["k_CO2"]
+b0_VPD    <- jarvis_bundle$par_hat["b0_VPD"]
+b1_VPD    <- jarvis_bundle$par_hat["b1_VPD"]
 
 jarvis_out <- jarvis_out |> 
   mutate(
@@ -3308,7 +3345,7 @@ jarvis_out <- jarvis_out |>
     ET_no_recovered = K_ET * g_eff_recovered
   )
 
-plot(jarvis_out$ET_predicted, jarvis_out$ET_no_recovered)
+plot(jarvis_out$ET_pred, jarvis_out$ET_no_recovered)
 
 # Now hold all but one functions at their mean and see the response of ET
 fP_mean <- mean(jarvis_out$fP, na.rm = TRUE)
@@ -3487,13 +3524,13 @@ points(jarvis_diffs$dVPD_norm,
        with(jarvis_diffs, dVPD_norm + dg_eff_norm + dg_eff_norm * dVPD_norm),
        col = "blue", pch = 3, cex = 0.3)
 
-plot(jarvis_diffs$dET_predicted_norm,
+plot(jarvis_diffs$dET_pred_norm,
      with(jarvis_diffs,
-          dVPD_norm + dg_eff_predicted_norm + dg_eff_predicted_norm * dVPD_norm))
+          dVPD_norm + dg_eff_pred_norm + dg_eff_pred_norm * dVPD_norm))
 
-plot(jarvis_diffs$dET_predicted_norm,
+plot(jarvis_diffs$dET_pred_norm,
      with(jarvis_diffs,
-          dVPD_norm + dg_eff_predicted_norm + dg_eff_predicted_norm * dVPD_norm +
+          dVPD_norm + dg_eff_pred_norm + dg_eff_pred_norm * dVPD_norm +
             eT * dTa_norm +               # First order term
             eT * dVPD_norm * dTa_norm +   # Second order term
             eT * dg_eff_norm * dTa_norm + # Second order term
@@ -3529,22 +3566,22 @@ dg_eff_norm_second_order <- function(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm)
   FO + SO
 }
 
-dg_eff_norm_predicted_from_FO <- with(jarvis_diffs,
+dg_eff_norm_pred_from_FO <- with(jarvis_diffs,
                                       dg_eff_norm_first_order(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
 
-dg_eff_norm_predicted_from_SO <- with(jarvis_diffs,
+dg_eff_norm_pred_from_SO <- with(jarvis_diffs,
                                       dg_eff_norm_second_order(dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
 
-plot(jarvis_diffs$dg_eff_predicted_norm, dg_eff_norm_predicted_from_FO)
-plot(jarvis_diffs$dg_eff_predicted_norm, dg_eff_norm_predicted_from_SO)
+plot(jarvis_diffs$dg_eff_pred_norm, dg_eff_norm_pred_from_FO)
+plot(jarvis_diffs$dg_eff_pred_norm, dg_eff_norm_pred_from_SO)
 
 # Exact match
-mean(jarvis_diffs$dg_eff_predicted_norm - dg_eff_norm_predicted_from_SO, na.rm = TRUE)
+mean(jarvis_diffs$dg_eff_pred_norm - dg_eff_norm_pred_from_SO, na.rm = TRUE)
 
 plot(jarvis_diffs$dET_norm, jarvis_diffs$dVPD_norm + jarvis_diffs$dg_eff_norm + jarvis_diffs$dVPD_norm * jarvis_diffs$dg_eff_norm)
-plot(jarvis_diffs$dET_predicted_norm, jarvis_diffs$dVPD_norm + jarvis_diffs$dg_eff_predicted_norm + jarvis_diffs$dVPD_norm * jarvis_diffs$dg_eff_predicted_norm)
+plot(jarvis_diffs$dET_pred_norm, jarvis_diffs$dVPD_norm + jarvis_diffs$dg_eff_pred_norm + jarvis_diffs$dVPD_norm * jarvis_diffs$dg_eff_pred_norm)
 
-plot(jarvis_diffs$dET_predicted_norm, jarvis_diffs$dVPD_norm + dg_eff_norm_predicted_from_SO + jarvis_diffs$dVPD_norm * dg_eff_norm_predicted_from_SO)
+plot(jarvis_diffs$dET_pred_norm, jarvis_diffs$dVPD_norm + dg_eff_norm_pred_from_SO + jarvis_diffs$dVPD_norm * dg_eff_norm_pred_from_SO)
 
 dET_norm_third_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm) {
   # 1st + 2nd order
@@ -3569,10 +3606,10 @@ dET_norm_third_order <- function(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVP
   FO + SO + TO
 }
 
-dET_norm_predicted_from_TO <- with(jarvis_diffs,
+dET_norm_pred_from_TO <- with(jarvis_diffs,
                                    dET_norm_third_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm, dfVPD_norm))
 
-plot(jarvis_diffs$dET_predicted_norm, dET_norm_predicted_from_TO)
+plot(jarvis_diffs$dET_pred_norm, dET_norm_pred_from_TO)
 
 
 ################################################################################
@@ -3581,17 +3618,17 @@ jarvis_diffs <- jarvis_diffs |>
   arrange(ensemble, model)
 
 jarvis_diffs <- jarvis_diffs |>
-  mutate(dETnorm_predicted_from_TO = dET_norm_third_order(1*dVPD_norm, 1*dfRg_norm, 1*dfTa_norm, 1*dfP_norm, 1*dfVPD_norm)) |> 
-  mutate(ET_fut_predicted_from_TO = dETnorm_predicted_from_TO * ET_predicted_hist + ET_predicted_hist) |> 
-  mutate(ET_fut_predicted_from_TO_and_hist = dETnorm_predicted_from_TO * ET_hist + ET_hist)
+  mutate(dETnorm_pred_from_TO = dET_norm_third_order(1*dVPD_norm, 1*dfRg_norm, 1*dfTa_norm, 1*dfP_norm, 1*dfVPD_norm)) |> 
+  mutate(ET_fut_pred_from_TO = dETnorm_pred_from_TO * ET_pred_hist + ET_pred_hist) |> 
+  mutate(ET_fut_pred_from_TO_and_hist = dETnorm_pred_from_TO * ET_hist + ET_hist)
 
-plot(jarvis_diffs$ET_predicted_fut, jarvis_diffs$ET_fut_predicted_from_TO)
-plot(jarvis_diffs$ET_predicted_fut, jarvis_diffs$ET_fut_predicted_from_TO_and_hist)
+plot(jarvis_diffs$ET_pred_fut, jarvis_diffs$ET_fut_pred_from_TO)
+plot(jarvis_diffs$ET_pred_fut, jarvis_diffs$ET_fut_pred_from_TO_and_hist)
 
 part_1 <- jarvis_diffs |> 
   select(
     ensemble, model,
-    ET_predicted_from_TO_and_hist = ET_hist,
+    ET_pred_from_TO_and_hist = ET_hist,
     P = P_hist
   ) |> 
   mutate(PERIOD = "1981_2005")
@@ -3599,7 +3636,7 @@ part_1 <- jarvis_diffs |>
 part_2 <- jarvis_diffs |> 
   select(
     ensemble, model,
-    ET_predicted_from_TO_and_hist = ET_fut_predicted_from_TO_and_hist,
+    ET_pred_from_TO_and_hist = ET_fut_pred_from_TO_and_hist,
     P = P_fut
   ) |> 
   mutate(PERIOD = "2076_2100")
@@ -3619,7 +3656,7 @@ merged <- merged |>
 
 
 out_BC_FAO56_alfalfa_ET_semipredicted <- Budyko_curve(merged,
-                                                      pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted_from_TO_and_hist", p_col = "P",
+                                                      pet_col = "ETo_FAO56_alfalfa", et_col = "ET_pred_from_TO_and_hist", p_col = "P",
                                                       X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
                                                       Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
                                                       boundary_line_col = "gray45",
@@ -3629,17 +3666,17 @@ out_BC_FAO56_alfalfa_ET_semipredicted <- Budyko_curve(merged,
 
 ################################################################################
 # Now remove fVPD
-dETnorm_predicted_from_TO_no_VPD <- with(jarvis_diffs,
+dETnorm_pred_from_TO_no_VPD <- with(jarvis_diffs,
                                          dET_norm_third_order(dVPD_norm, dfRg_norm, dfTa_norm, dfP_norm,
                                                               0 * dfVPD_norm))
 
-plot(jarvis_diffs$dET_predicted_norm, dETnorm_predicted_from_TO_no_VPD)
+plot(jarvis_diffs$dET_pred_norm, dETnorm_pred_from_TO_no_VPD)
 
 
-ET_future_no_fVPD <- dETnorm_predicted_from_TO_no_VPD *
-  jarvis_diffs$ET_predicted_hist + jarvis_diffs$ET_predicted_hist
+ET_future_no_fVPD <- dETnorm_pred_from_TO_no_VPD *
+  jarvis_diffs$ET_pred_hist + jarvis_diffs$ET_pred_hist
 
-plot(jarvis_diffs$ET_predicted_fut, ET_future_no_fVPD)
+plot(jarvis_diffs$ET_pred_fut, ET_future_no_fVPD)
 
 plot(jarvis_diffs$VPD_fut, ET_future_no_fVPD)
 
@@ -3672,8 +3709,8 @@ plot(test_data_sorted$ETo_FAO56_alfalfa / test_data_sorted$P,
 
 # Predicted ET vs. VPD
 make_scatter_plot(data = jarvis_out |>
-                    select(VPD, ET_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
-                    rename(x = "VPD", y = "ET_predicted"),
+                    select(VPD, ET_pred, ensemble, color, fill, border, shape, model, linetype) |> 
+                    rename(x = "VPD", y = "ET_pred"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(VPD),  y_lab = bquote("ET"["predicted"]),
                   hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
@@ -3688,7 +3725,7 @@ part_1 <- annual_stats_wide |>
   select(PERIOD, ENSEMBLE, MODEL, ETo_FAO56_alfalfa = ETo_FAO56_alfalfa, ET = ET, P = P)
 
 part_2 <- jarvis_out |> 
-  select(PERIOD, ensemble, model, ET_predicted = ET_predicted, ET = ET, P = P)
+  select(PERIOD, ensemble, model, ET_pred = ET_pred, ET = ET, P = P)
 
 # 2) Inner-join on the matching keys:
 part_join <- part_1 |> 
@@ -3700,7 +3737,7 @@ part_join <- part_1 |>
 View(part_join)
 
 out_BC_FAO56_alfalfa_ET_predicted <- Budyko_curve(part_join,
-                                                  pet_col = "ETo_FAO56_alfalfa", et_col = "ET_predicted", p_col = "P.x",
+                                                  pet_col = "ETo_FAO56_alfalfa", et_col = "ET_pred", p_col = "P.x",
                                                   X_range = c(0.0, 2.2), Y_range = c(0.0, 1.2),
                                                   Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
                                                   boundary_line_col = "gray45",
@@ -3872,18 +3909,18 @@ ggsave('../plots/ggplot2/EI_vs_VPD_arrow_ggplot2_TIDY.png', plot = p_EI_VPD_arro
 Data_to_plot$abs |> names()
 
 Data_to_plot$abs <- Data_to_plot$abs |> 
-  mutate(g_eff_predicted = coef(fit_sqrt)[1] + coef(fit_sqrt)[2] * 1 / sqrt(VPD))
+  mutate(g_eff_pred = coef(fit_sqrt)[1] + coef(fit_sqrt)[2] * 1 / sqrt(VPD))
 
 # Data_to_plot$abs <- Data_to_plot$abs |> 
-#   mutate(g_eff_predicted = coef(fit_log)[1] + coef(fit_log)[2] * log(VPD))
+#   mutate(g_eff_pred = coef(fit_log)[1] + coef(fit_log)[2] * log(VPD))
 
 # Data_to_plot$abs <- Data_to_plot$abs |> 
-#   mutate(g_eff_predicted = g_eff)
+#   mutate(g_eff_pred = g_eff)
 
 # Predicted vs. original ET
 make_scatter_plot(data = Data_to_plot$abs |>
-                    select(g_eff, g_eff_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
-                    rename(x = "g_eff", y = "g_eff_predicted"),
+                    select(g_eff, g_eff_pred, ensemble, color, fill, border, shape, model, linetype) |> 
+                    rename(x = "g_eff", y = "g_eff_pred"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(g["eff"]~"(mm/s)"),  y_lab = bquote(g["eff predicted"]~"(mm/s)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
@@ -3893,15 +3930,15 @@ make_scatter_plot(data = Data_to_plot$abs |>
 ggsave('../plots/ggplot2/geff_predicted_vs_geff.png', plot = geff_predicted_vs_geff, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 Data_to_plot$abs <- Data_to_plot$abs |> 
-  mutate(ET_predicted = (rhoAir * CpAir / gamma) * VPD /
-           (1 / (g_eff_predicted / 1000)) *                                       # Surface resistance
+  mutate(ET_pred = (rhoAir * CpAir / gamma) * VPD /
+           (1 / (g_eff_pred / 1000)) *                                       # Surface resistance
            1 / ((2.501 * (10^6) - 2361 * Ta) / (10^6)) * 3600*24 / 10^6 * 365.25  # From LE to annual ET
   )
 
 # Predicted vs. original ET
 make_scatter_plot(data = Data_to_plot$abs |>
-                    select(ET, ET_predicted, ensemble, color, fill, border, shape, model, linetype) |> 
-                    rename(x = "ET", y = "ET_predicted"),
+                    select(ET, ET_pred, ensemble, color, fill, border, shape, model, linetype) |> 
+                    rename(x = "ET", y = "ET_pred"),
                   FIT = FALSE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(ET~"(mm/yr)"),  y_lab = bquote(ET[predicted]~"(mm/yr)"),
                   hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
@@ -3913,7 +3950,7 @@ ggsave('../plots/ggplot2/ET_predicted_vs_ET.png', plot = ET_predicted_vs_ET, wid
 #--------------------
 # Check the residuals
 Data_to_plot$abs <- Data_to_plot$abs |> 
-  mutate(g_eff_resids = g_eff - g_eff_predicted)
+  mutate(g_eff_resids = g_eff - g_eff_pred)
 
 Data_to_plot$abs |> pull(g_eff_resids) |> plot()
 
@@ -5502,3 +5539,4 @@ ggsave("../plots/ggplot2/combined_BC,EI,omega_ggplot2_TIDY.png", combined,
 # - what if one single omega is fitted and the difference is in ET or EI are analysed in repsonse to VPD?
 # - determine what should be a reduction of rs in PM that would ensure that all models are following the same BC
 # - check in BC why the in the energy-limited region the gray line does not origin in zero-zero
+

@@ -13,8 +13,8 @@ if (!exists("Data_to_plot", inherits = TRUE) || is.null(Data_to_plot[["abs"]])) 
   stop("Missing Data_to_plot[['abs']] in your environment.", call. = FALSE)
 }
 stopifnot(all(c("rhoAir","CpAir","gamma") %in% ls(.GlobalEnv)))
-if (!exists("jarvis_bundle", inherits = TRUE) || is.null(jarvis_bundle$jarvis_pars)) {
-  stop("Missing jarvis_bundle$jarvis_pars in your environment.", call. = FALSE)
+if (!exists("jarvis_bundle", inherits = TRUE) || is.null(jarvis_bundle$par_hat)) {
+  stop("Missing jarvis_bundle$par_hat in your environment.", call. = FALSE)
 }
 
 # ===========================
@@ -29,15 +29,15 @@ K_ET_fun <- function(VPD, Ta, rhoAir, CpAir, gamma){
 
 # Fixed Jarvis parameters
 par_fixed <- c(
-  Rg_min    = as.numeric(jarvis_bundle$jarvis_pars["Rg_min"]),
-  Rg_max    = as.numeric(jarvis_bundle$jarvis_pars["Rg_max"]),
-  Ta_min    = as.numeric(jarvis_bundle$jarvis_pars["Ta_min"]),
-  Ta_max    = as.numeric(jarvis_bundle$jarvis_pars["Ta_max"]),
-  P_min     = as.numeric(jarvis_bundle$jarvis_pars["P_min"]),
-  P_max     = as.numeric(jarvis_bundle$jarvis_pars["P_max"]),
-  k_CO2     = as.numeric(jarvis_bundle$jarvis_pars["k_CO2"]),
-  b0_VPD    = as.numeric(jarvis_bundle$jarvis_pars["b0_VPD"]),
-  b1_VPD    = as.numeric(jarvis_bundle$jarvis_pars["b1_VPD"])
+  Rg_min    = as.numeric(jarvis_bundle$par_hat["Rg_min"]),
+  Rg_max    = as.numeric(jarvis_bundle$par_hat["Rg_max"]),
+  Ta_min    = as.numeric(jarvis_bundle$par_hat["Ta_min"]),
+  Ta_max    = as.numeric(jarvis_bundle$par_hat["Ta_max"]),
+  P_min     = as.numeric(jarvis_bundle$par_hat["P_min"]),
+  P_max     = as.numeric(jarvis_bundle$par_hat["P_max"]),
+  k_CO2     = as.numeric(jarvis_bundle$par_hat["k_CO2"]),
+  b0_VPD    = as.numeric(jarvis_bundle$par_hat["b0_VPD"]),
+  b1_VPD    = as.numeric(jarvis_bundle$par_hat["b1_VPD"])
 )
 
 use_P <- TRUE; use_Rg <- TRUE; use_Ta <- TRUE; use_CO2 <- TRUE; use_VPD <- TRUE
