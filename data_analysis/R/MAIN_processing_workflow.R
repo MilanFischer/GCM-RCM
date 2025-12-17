@@ -761,7 +761,7 @@ for (i in seq_len(nrow(p_ratios))) {
 
 #---- Subplot labels
 plots <- list(p1 = p1, p2 = p2, p3 = p3, p4 = p4)
-labels <- c("a)", "b)", "c)", "d)")
+labels <- c("a", "b", "c", "d")
 
 plots <- Map(function(plot, label) {
   plot + annotation_custom(
@@ -995,7 +995,7 @@ ggsave('../plots/ggplot2/delta_g_eff_over_g_eff_vs_Ta_ggplot2_TIDY.png', plot = 
 
 # #---- Subplot labels
 # plots <- list(p1 = p1, p2 = p2, p3 = p3, p4 = p4)
-# labels <- c("a)", "b)", "c)", "d)")
+# labels <- c("a", "b", "c", "d")
 # 
 # plots <- Map(function(plot, label) {
 #   plot + annotation_custom(
@@ -1665,10 +1665,10 @@ ggsave('../plots/ggplot2/delta_Rn_versus_delta_ET_over_ET_ggplot2_TIDY.png', plo
 
 #---- Subplot labels
 plots <- list(p5 = p5, p6 = p6, p7 = p7, p8 = p8)
-labels <- c("a)", "b)", "c)", "d)")
+labels <- c("a", "b", "c", "d")
 
 plots <- Map(function(plot, label) {
-  x_pos <- if (label == "d)") 0.08 else 0.05  # Move "d)" to the right
+  x_pos <- if (label == "d") 0.08 else 0.05  # Move "d" to the right
   plot + annotation_custom(
     textGrob(label, x = unit(x_pos, "npc"), y = unit(0.96, "npc"),
              gp = gpar(fontsize = 12))
@@ -1974,13 +1974,13 @@ out_BC_FAO56_alfalfa_CO2_corr <- Budyko_curve(annual_stats_wide,
                                               Xin_range = c(0.8, 1.6), Yin_range = c(0.60, 0.8),
                                               plot = TRUE, plot_name = "../plots/ggplot2/Budyko_curve_CO2_ggplot2.png")
 
-# Add label "a)" to the first plot
+# Add label "a" to the first plot
 p9 <- out_BC_FAO56_alfalfa$out_plot + 
-  annotate("text", x = Inf, y = Inf, label = "a)", hjust = 1.5, vjust = 1.5, size = 6)
+  annotate("text", x = Inf, y = Inf, label = "a", hjust = 1.5, vjust = 1.5, size = 6)
 
-# Add label "b)" to the second plot
+# Add label "b" to the second plot
 p10 <- out_BC_FAO56_alfalfa_CO2_corr$out_plot + 
-  annotate("text", x = Inf, y = Inf, label = "b)", hjust = 1.5, vjust = 1.5, size = 6)
+  annotate("text", x = Inf, y = Inf, label = "b", hjust = 1.5, vjust = 1.5, size = 6)
 
 # Combine the two plots side by side using cowplot
 panel_figure <- (p9 | p10) 
@@ -1990,13 +1990,13 @@ ggsave('../plots/ggplot2/BC_PET_PM_and_PM_corr_TIDY.png', plot = panel_figure, w
 
 ################################################################################
 
-# Add label "a)" to the first plot
+# Add label "a" to the first plot
 p9 <- out_BC_FAO56_alfalfa$out_plot + 
-  annotate("text", x = Inf, y = Inf, label = "a)", hjust = 1.5, vjust = 1.5, size = 6)
+  annotate("text", x = Inf, y = Inf, label = "a", hjust = 1.5, vjust = 1.5, size = 6)
 
-# Add label "b)" to the second plot
+# Add label "b" to the second plot
 p10 <- out_BC_FAO56_alfalfa_CO2_corr$out_plot + 
-  annotate("text", x = Inf, y = Inf, label = "b)", hjust = 1.5, vjust = 1.5, size = 6)
+  annotate("text", x = Inf, y = Inf, label = "b", hjust = 1.5, vjust = 1.5, size = 6)
 
 # Combine the two plots side by side using cowplot
 panel_figure <- (p9 | p10) 
@@ -2068,7 +2068,7 @@ add_tb_padding <- function(g, top = 0.05, bottom = 0.005) {
   grid.arrange(nullGrob(), g, nullGrob(), ncol = 1, heights = c(top, 1, bottom))
 }
 
-label_panel <- function(g, lab = "a)", col = "#333333", pad_pt = 1) {
+label_panel <- function(g, lab = "a", col = "#333333", pad_pt = 1) {
   if (inherits(g, "gg")) g <- ggplotGrob(g)
   stopifnot(grid::is.grob(g))
   title_g <- grid::textGrob(
@@ -2102,7 +2102,7 @@ crop_image_by_percentage <- function(image, left_percent, right_percent, top_per
 # panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
 panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.55) |> # left_percent, right_percent, top_percent, bottom_percent
   grDevices::as.raster() |> rasterGrob(interpolate = TRUE) |>
-  label_panel("a)", col = "#333333") |>
+  label_panel("a", col = "#333333") |>
   add_tb_padding(top = 0.02, bottom = 0.005)
 
 ## --- plots (barplots) ---
@@ -2136,7 +2136,7 @@ panel_hydro_core  <- grid.arrange(plot_P, plot_ET, plot_RO,  ncol = 1, heights =
 panel_thermo_core <- grid.arrange(plot_Ta, plot_RH, plot_VPD, ncol = 1, heights = c(1,1,1))
 
 # Leave ~7% of the height for the header; tweak 0.04–0.08 to taste
-panel_hydro  <- overlay_header(panel_hydro_core,  left_lab = "b)", title = "Water balance", 
+panel_hydro  <- overlay_header(panel_hydro_core,  left_lab = "b", title = "Water balance", 
                                top_pad = 0.07, title_x = 0.6, title_hjust = 0.5)
 panel_thermo <- overlay_header(panel_thermo_core, left_lab = "",   title = "Atmospheric states",
                                top_pad = 0.07, title_x = 0.6, title_hjust = 0.5)
@@ -2218,7 +2218,7 @@ ggsave('../plots/ggplot2/Budyko_curve_ggplot2.png', plot = Budyko_plot, width = 
 
 ## --- bottom row: c | spacer | d ---
 panel_c <- Budyko_plot |>
-  label_panel("c)", col = "#333333") |>
+  label_panel("c", col = "#333333") |>
   add_tb_padding(top = 0.01, bottom = 0.005)
 
 # <<----------------- Start of dTa vs. dVPD/VPD ------------------------------>>
@@ -2273,7 +2273,7 @@ p_Ta_VPDn <- p_Ta_VPDn + geom_line(data = DF1_CC_nonlinear, aes(x = X, y = Y), l
 # <<----------------- End of dTa vs. dVPD/VPD -------------------------------->>
 
 panel_d <- p_Ta_VPDn |>
-  label_panel("d)", col = "#333333") |>
+  label_panel("d", col = "#333333") |>
   add_tb_padding(top = 0.01, bottom = 0.005)
 
 bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(2, 0.1, 2))
@@ -2431,7 +2431,7 @@ top <- cowplot::plot_grid(
   aligned[[1]], NULL, aligned[[2]],
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("a)", "", "b)"),
+  labels = c("a", "", "b"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -2442,7 +2442,7 @@ bottom <- cowplot::plot_grid(
   aligned[[3]], NULL, aligned[[4]], NULL, aligned[[5]],
   ncol = 5,
   rel_widths = c(1, 0.05, 1, 0.05, 1),
-  labels = c("c)", "", "d)", "", "e)"),
+  labels = c("c", "", "d", "", "e"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -3354,236 +3354,74 @@ ET_predicted_vs_P <- put_line_behind(ET_predicted_vs_P)
 ggsave('../plots/ggplot2/ET_vs_P_ALE.png', plot = ET_predicted_vs_P, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 # ------------------------------------------------------------------------------
-# Permutation insets
-make_perm_inset <- function(csv_path,
-                            response = c("geff","ET"),
-                            order = c("VPD","P","Ta","Rg","CO2_term"),
-                            q_lo = 0.25, q_hi = 0.75) {
-  
-  response <- match.arg(response)
-  
-  df <- readr::read_csv(csv_path, show_col_types = FALSE)
-  
-  # -----------------------
-  # Pick delta columns
-  # -----------------------
-  if (response == "geff") {
-    med <- df$med_delta_geff
-    lo  <- df$lo_geff
-    hi  <- df$hi_geff
-  } else {
-    med <- df$med_delta_ET
-    lo  <- df$lo_ET
-    hi  <- df$hi_ET
-  }
-  
-  # -----------------------
-  # Option A normalization (share of total ΔRMSE)
-  # -----------------------
-  den <- sum(pmax(med, 0), na.rm = TRUE)
-  
-  df2 <- df |>
-    dplyr::mutate(
-      feature = factor(feature, levels = order),
-      share    = 100 * pmax(med, 0) / den,
-      share_lo = 100 * pmax(lo,  0) / den,
-      share_hi = 100 * pmax(hi,  0) / den
-    ) |>
-    dplyr::filter(!is.na(feature)) |>
-    dplyr::arrange(dplyr::desc(share))
-  
-  # -----------------------
-  # Expression-style labels (IMPORTANT PART)
-  # -----------------------
-  label_map <- c(
-    VPD      = "VPD",
-    P        = "P",
-    Ta       = "T[a]",
-    Rg       = "R[g]",
-    CO2_term = "CO[2]"
-  )
-  
-  df2$lab <- unname(label_map[as.character(df2$feature)])
-  
-  # -----------------------
-  # Plot
-  # -----------------------
-  ggplot2::ggplot(df2, ggplot2::aes(x = reorder(lab, share), y = share)) +
-    ggplot2::geom_col(width = 0.75) +
-    ggplot2::geom_errorbar(
-      ggplot2::aes(ymin = share_lo, ymax = share_hi),
-      width = 0.15, linewidth = 0.3
-    ) +
-    ggplot2::coord_flip() +
-    ggplot2::scale_x_discrete(labels = function(x) parse(text = x)) +  # <-- enables subscripts
-    ggplot2::theme_void(base_size = 8) +
-    ggplot2::theme(
-      axis.text.y = ggplot2::element_text(size = 7, colour = "#222222"),
-      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-      panel.background = ggplot2::element_rect(fill = "white", colour = NA),
-      plot.margin = ggplot2::margin(2,2,2,2)
-    ) +
-    ggplot2::labs(y = NULL, x = NULL)
-}
 
-make_perm_inset_ET_vpd_channels <- function(summary_csv,
-                                            vpd_channels_csv,
-                                            order = c("VPD[demand]","VPD[stomatal]","P","Ta","Rg","CO2_term"),
-                                            q_lo = 0.25, q_hi = 0.75) {
-  
-  # -----------------------
-  # Read CSVs
-  # -----------------------
-  s <- readr::read_csv(summary_csv, show_col_types = FALSE)
-  v <- readr::read_csv(vpd_channels_csv, show_col_types = FALSE)
-  
-  # -----------------------
-  # Non-VPD features
-  # -----------------------
-  nonvpd <- s |>
-    dplyr::filter(feature %in% c("P","Ta","Rg","CO2_term")) |>
-    dplyr::transmute(
-      key = feature,
-      med = med_delta_ET,
-      lo  = lo_ET,
-      hi  = hi_ET
-    )
-  
-  # -----------------------
-  # VPD channels
-  # -----------------------
-  vpdch <- v |>
-    dplyr::transmute(
-      key = channel,          # "VPD[demand]" / "VPD[stomatal]"
-      med = med_delta_ET,
-      lo  = lo_ET,
-      hi  = hi_ET
-    )
-  
-  # -----------------------
-  # Combine
-  # -----------------------
-  df <- dplyr::bind_rows(vpdch, nonvpd) |>
-    dplyr::mutate(
-      key = factor(as.character(key), levels = order)
-    ) |>
-    dplyr::filter(!is.na(key))
-  
-  # -----------------------
-  # Option A normalization (share of total ΔRMSE)
-  # -----------------------
-  den <- sum(pmax(df$med, 0), na.rm = TRUE)
-  
-  df <- df |>
-    dplyr::mutate(
-      share    = 100 * pmax(med, 0) / den,
-      share_lo = 100 * pmax(lo,  0) / den,
-      share_hi = 100 * pmax(hi,  0) / den
-    ) |>
-    dplyr::arrange(dplyr::desc(share))
-  
-  # -----------------------
-  # Expression-style labels (THIS IS THE IMPORTANT PART)
-  # -----------------------
-  label_map <- c(
-    "VPD[demand]"   = "VPD[demand]",
-    "VPD[stomatal]" = "VPD[stomatal]",
-    P               = "P",
-    Ta              = "T[a]",
-    Rg              = "R[g]",
-    CO2_term        = "CO[2]"
-  )
-  
-  df$lab <- unname(label_map[as.character(df$key)])
-  
-  # -----------------------
-  # Plot
-  # -----------------------
-  ggplot2::ggplot(df, ggplot2::aes(x = reorder(lab, share), y = share)) +
-    ggplot2::geom_col(width = 0.75) +
-    ggplot2::geom_errorbar(
-      ggplot2::aes(ymin = share_lo, ymax = share_hi),
-      width = 0.15, linewidth = 0.3
-    ) +
-    ggplot2::coord_flip() +
-    ggplot2::scale_x_discrete(labels = function(x) parse(text = x)) +  # <-- parses subscripts
-    ggplot2::theme_void(base_size = 8) +
-    ggplot2::theme(
-      axis.text.y = ggplot2::element_text(size = 7, colour = "#222222"),
-      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-      panel.background = ggplot2::element_rect(fill = "white", colour = NA),
-      plot.margin = ggplot2::margin(2,2,2,2)
-    )
-}
+source("./src/make_perm_plot.R")
 
-inset_geff <- make_perm_inset(
+inset_geff <- make_perm_plot(
   csv_path = "../outputs/perm_rf_hybrid_vpd_constrained_fit_summary.csv",
   response = "geff"
 )
 
-inset_ET <- make_perm_inset(
+inset_ET <- make_perm_plot(
   csv_path = "../outputs/perm_rf_hybrid_vpd_constrained_fit_summary.csv",
   response = "ET"
 )
 
-# inset_ET <- make_perm_inset_ET_vpd_channels(
+# inset_ET <- make_perm_plot_ET_vpd_channels(
 #   summary_csv      = "../outputs/perm_rf_hybrid_vpd_constrained_fit_summary.csv",
 #   vpd_channels_csv = "../outputs/perm_rf_hybrid_vpd_constrained_VPD_channels_ET_summary.csv"
 # )
 
-pA_inset <- ggdraw(pA) +
-  draw_plot(inset_geff, x = 0.7, y = 0.13, width = 0.28, height = 0.28)
-
-pB_inset <- ggdraw(pB) +
-  draw_plot(inset_ET,   x = 0.7, y = 0.7, width = 0.28, height = 0.28)
-
 #--------------
 # Combined plot
 
-# Optional but helps: tiny, identical plot margins
-tight <- theme(plot.margin = margin(3,3,3,3))
 pA <- p_geff_sqrt_VPD_single_fit + tight
-pB <- ET_predicted_vs_VPD_AFFM + tight
-pC <- ET_predicted_vs_Rg + tight
-pD <- ET_predicted_vs_Ta   + tight
-pE <- ET_predicted_vs_P  + tight
+pB <- ET_predicted_vs_VPD_AFFM   + tight
+pC <- ET_predicted_vs_Rg         + tight
+pD <- ET_predicted_vs_Ta         + tight
+pE <- ET_predicted_vs_P          + tight
 
-# (2) Align *all five* first; keep all four sides ('tblr')
-aligned <- cowplot::align_plots(pA_inset, pB_inset, pC, pD, pE, align = "hv", axis = "tblr")
+# 1) Align the base plots (no insets yet)
+aligned <- cowplot::align_plots(pA, pB, pC, pD, pE, align = "hv", axis = "tblr")
 
-# (3) Build rows from the aligned grobs
-# --- top row with spacing between A and B ---
-top <- cowplot::plot_grid(
-  aligned[[1]], NULL, aligned[[2]],
+# 2) Add insets AFTER alignment (wrap the already-aligned grobs)
+A_inset <- ggdraw(aligned[[1]]) +
+  draw_plot(inset_geff, x = 0.685, y = 0.12, width = 0.30, height = 0.30)
+
+B_inset <- ggdraw(aligned[[2]]) +
+  draw_plot(inset_ET,   x = 0.685, y = 0.68, width = 0.30, height = 0.30)
+
+# 3) Build rows (use A_inset and B_inset, and the already-aligned others)
+top <- plot_grid(
+  A_inset, NULL, B_inset,
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("a)", "", "b)"),
+  labels = c("a", "", "b"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
 )
 
-# --- bottom row with spacing between C, D, E ---
-bottom <- cowplot::plot_grid(
+bottom <- plot_grid(
   aligned[[3]], NULL, aligned[[4]], NULL, aligned[[5]],
   ncol = 5,
   rel_widths = c(1, 0.05, 1, 0.05, 1),
-  labels = c("c)", "", "d)", "", "e)"),
+  labels = c("c", "", "d", "", "e"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = -0.1
 )
 
-# --- add vertical spacing between top and bottom ---
-combined <- cowplot::plot_grid(
+combined <- plot_grid(
   NULL, top, NULL, bottom,
   ncol = 1,
-  rel_heights = c(0.1, 3, 0.1, 1.9)  # the middle '0.1' is vertical gap
+  rel_heights = c(0.1, 3, 0.1, 1.9)
 )
 
-# (5) Save (use any size you like; e.g. 240×200 mm fits a 3:2 row split nicely)
-ggsave("../plots/ggplot2/g_eff_vs_sqrt_VPD,ET_vs_VPD,Rg,Ta,P_ggplot2_TIDY.png", combined,
-       width = 240, height = 192, units = "mm", dpi = RES, bg = "white")
+ggsave(
+  "../plots/ggplot2/g_eff_vs_sqrt_VPD,ET_vs_VPD,Rg,Ta,P_ggplot2_TIDY.png",
+  combined, width = 240, height = 192, units = "mm", dpi = RES, bg = "white"
+)
 
 # Sort by VPD
 jarvis_out |> 
@@ -4020,7 +3858,7 @@ out_BC_FAO56_alfalfa_ET_predicted <- Budyko_curve(part_join,
 
 #---- Subplot labels
 plots <- list(p1 = p_AI_VPD_norm, p2 = p_EI_VPD_norm, p3 = p_geff_sqrt_VPD_single_fit, p4 = p_ET_VPD)
-labels <- c("a)", "b)", "c)", "d)")
+labels <- c("a", "b", "c", "d")
 
 plots <- Map(function(plot, label) {
   plot + annotation_custom(
@@ -5773,7 +5611,7 @@ top <- cowplot::plot_grid(
   aligned[[1]], NULL, aligned[[2]],
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("a)", "", "b)"),
+  labels = c("a", "", "b"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -5784,7 +5622,7 @@ bottom <- cowplot::plot_grid(
   aligned[[3]], NULL, aligned[[4]],
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("c)", "", "d)"),
+  labels = c("c", "", "d"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = -0.1
