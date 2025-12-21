@@ -546,6 +546,11 @@ annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> pull(ET_diff) |
 annual_stats_wide |> mutate(ET_diff = ETo_FAO56_alfalfa - ET) |> filter(ET_diff < 0)
 
 annual_stats_wide |> filter(ENSEMBLE == "ERA5") |> View()
+annual_stats_wide |>
+  filter(ENSEMBLE == "EUR-44", PERIOD == "1981_2005") |>
+  summarise(
+    across(where(is.numeric), \(x) mean(x, na.rm = TRUE))
+  ) |>  View()
 
 annual_stats_wide |> filter(ENSEMBLE == "ERA5") |> select(VPD, EI, AI_FAO56_alfalfa) |> View()
 
