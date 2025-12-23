@@ -610,7 +610,8 @@ Data_to_plot[["diffs"]] <- all_diff |>
     linetype = "solid"
   ) |>
   filter(ENSEMBLE != "ERA5") |> 
-  rename(ensemble = ENSEMBLE, model = MODEL)
+  rename(ensemble = ENSEMBLE, model = MODEL) |> 
+  mutate(model = gsub("_", "-", model))
 
 # --------------
 # Start plotting
@@ -955,7 +956,8 @@ g_eff_corr_RCMs <- annual_stats_wide |>
     g_eff_corr = (1 / (rs_CO2(rs_eff_2076_2100)) ) * 1000,
     d_g_eff_CO2_corr = (g_eff_corr - g_eff_1981_2005) / g_eff_1981_2005
   ) |>
-  select(MODEL, d_g_eff_CO2_corr)
+  select(MODEL, d_g_eff_CO2_corr) |> 
+  mutate(MODEL = gsub("_", "-", MODEL))
 
 # --- Prepare plotting data ---
 
@@ -1079,7 +1081,8 @@ Data_to_plot[["abs"]] <- annual_stats |>
     linetype = "solid"
   ) |>
   filter(ENSEMBLE != "ERA5") |> 
-  rename(ensemble = ENSEMBLE, model = MODEL)
+  rename(ensemble = ENSEMBLE, model = MODEL) |> 
+  mutate(model = gsub("_", "-", model))
 
 attributes(Data_to_plot$abs)
 
