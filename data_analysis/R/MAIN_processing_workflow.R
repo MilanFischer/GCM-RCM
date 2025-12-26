@@ -2117,7 +2117,7 @@ crop_image_by_percentage <- function(image, left_percent, right_percent, top_per
 # panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
 panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.55) |> # left_percent, right_percent, top_percent, bottom_percent
   grDevices::as.raster() |> rasterGrob(interpolate = TRUE) |>
-  label_panel("a", col = "#333333") |>
+  label_panel("A", col = "#333333") |>
   add_tb_padding(top = 0.02, bottom = 0.005)
 
 ## --- plots (barplots) ---
@@ -2151,7 +2151,7 @@ panel_hydro_core  <- grid.arrange(plot_P, plot_ET, plot_RO,  ncol = 1, heights =
 panel_thermo_core <- grid.arrange(plot_Ta, plot_RH, plot_VPD, ncol = 1, heights = c(1,1,1))
 
 # Leave ~7% of the height for the header; tweak 0.04–0.08 to taste
-panel_hydro  <- overlay_header(panel_hydro_core,  left_lab = "b", title = "Water balance", 
+panel_hydro  <- overlay_header(panel_hydro_core,  left_lab = "B", title = "Water balance", 
                                top_pad = 0.07, title_x = 0.6, title_hjust = 0.5)
 panel_thermo <- overlay_header(panel_thermo_core, left_lab = "",   title = "Atmospheric states",
                                top_pad = 0.07, title_x = 0.6, title_hjust = 0.5)
@@ -2233,7 +2233,7 @@ ggsave('../plots/ggplot2/Budyko_curve_ggplot2.png', plot = Budyko_plot, width = 
 
 ## --- bottom row: c | spacer | d ---
 panel_c <- Budyko_plot |>
-  label_panel("c", col = "#333333") |>
+  label_panel("C", col = "#333333") |>
   add_tb_padding(top = 0.01, bottom = 0.005)
 
 # <<----------------- Start of dTa vs. dVPD/VPD ------------------------------>>
@@ -2288,7 +2288,7 @@ p_Ta_VPDn <- p_Ta_VPDn + geom_line(data = DF1_CC_nonlinear, aes(x = X, y = Y), l
 # <<----------------- End of dTa vs. dVPD/VPD -------------------------------->>
 
 panel_d <- p_Ta_VPDn |>
-  label_panel("d", col = "#333333") |>
+  label_panel("D", col = "#333333") |>
   add_tb_padding(top = 0.01, bottom = 0.005)
 
 bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(2, 0.1, 2))
@@ -2446,7 +2446,7 @@ top <- cowplot::plot_grid(
   aligned[[1]], NULL, aligned[[2]],
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("a", "", "b"),
+  labels = c("A", "", "B"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -2457,7 +2457,7 @@ bottom <- cowplot::plot_grid(
   aligned[[3]], NULL, aligned[[4]], NULL, aligned[[5]],
   ncol = 5,
   rel_widths = c(1, 0.05, 1, 0.05, 1),
-  labels = c("c", "", "d", "", "e"),
+  labels = c("C", "", "D", "", "E"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -3411,7 +3411,7 @@ top <- plot_grid(
   A_inset, NULL, B_inset,
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("a", "", "b"),
+  labels = c("A", "", "B"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -3421,7 +3421,7 @@ bottom <- plot_grid(
   aligned[[3]], NULL, aligned[[4]], NULL, aligned[[5]],
   ncol = 5,
   rel_widths = c(1, 0.05, 1, 0.05, 1),
-  labels = c("c", "", "d", "", "e"),
+  labels = c("C", "", "D", "", "E"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = -0.1
@@ -5626,7 +5626,7 @@ top <- cowplot::plot_grid(
   aligned[[1]], NULL, aligned[[2]],
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("a", "", "b"),
+  labels = c("A", "", "B"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = 0.1
@@ -5637,7 +5637,7 @@ bottom <- cowplot::plot_grid(
   aligned[[3]], NULL, aligned[[4]],
   ncol = 3,
   rel_widths = c(1, 0.05, 1),
-  labels = c("c", "", "d"),
+  labels = c("C", "", "D"),
   label_colour = "#333333",
   label_size = 12,
   hjust = -1, vjust = -0.1
