@@ -662,13 +662,20 @@ LM_eq_labels <- tibble(
   y = c(0.14, 0.09, 0.04)
 )
 
+Plot_labels <- tibble(
+  x = c(0.03, 0.03, 0.03),
+  y = c(0.95, 0.90, 0.85),
+  ensemble= c("CMIP5", "CMIP6", "EUR-44"),
+  color = c(COL_CMIP5, COL_CMIP6, COL_RCMs)
+)
+
 make_scatter_plot(data = Data_to_plot$diffs |>
                     select(d_P_over_P, d_ET_over_ET, ensemble, color, fill, border, shape, model, linetype) |> 
                     rename(x = "d_P_over_P", y = "d_ET_over_ET"),
                   FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
                   x_lab = bquote(Delta*'P/'*'P'),  y_lab = bquote(Delta*'ET/'*'ET'),
                   one_to_one_line = TRUE, one_to_one_line_lab = c(0.92, 0.79), robust_regression = TRUE,
-                  LM_eq_labels = LM_eq_labels,
+                  LM_eq_labels = LM_eq_labels, plot_labels = Plot_labels,
                   plot_path = "../plots/ggplot2", plot_name = "delta_ET_over_ET_vs_delta_P_over_P_ggplot2_TIDY.png", save_ggplot2_obj_as="p3")
 
 #----------------
