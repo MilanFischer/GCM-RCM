@@ -2083,15 +2083,32 @@ add_tb_padding <- function(g, top = 0.05, bottom = 0.005) {
   grid.arrange(nullGrob(), g, nullGrob(), ncol = 1, heights = c(top, 1, bottom))
 }
 
-label_panel <- function(g, lab = "a", col = "#333333", pad_pt = 1) {
+# label_panel <- function(g, lab = "a", col = "#333333", pad_pt = 1) {
+#   if (inherits(g, "gg")) g <- ggplotGrob(g)
+#   stopifnot(grid::is.grob(g))
+#   title_g <- grid::textGrob(
+#     lab, x = grid::unit(0.01, "npc"), y = grid::unit(1, "npc"),
+#     just = c("left", "top"),
+#     gp = grid::gpar(col = col, fontsize = 16, fontface = "bold")
+#   )
+#   h <- grid::grobHeight(title_g) + grid::unit(pad_pt, "pt")  # enough room for the text
+#   gridExtra::arrangeGrob(title_g, g, ncol = 1,
+#                          heights = grid::unit.c(h, grid::unit(1, "null")))
+# }
+
+label_panel <- function(g, lab = "a", col = "#333333", pad_pt = 1,
+                        fontsize = 16, fontface = "bold") {
   if (inherits(g, "gg")) g <- ggplotGrob(g)
   stopifnot(grid::is.grob(g))
+  
   title_g <- grid::textGrob(
-    lab, x = grid::unit(0.01, "npc"), y = grid::unit(1, "npc"),
+    lab,
+    x = grid::unit(0.01, "npc"), y = grid::unit(1, "npc"),
     just = c("left", "top"),
-    gp = grid::gpar(col = col, fontsize = 16, fontface = "bold")
+    gp = grid::gpar(col = col, fontsize = fontsize, fontface = fontface)
   )
-  h <- grid::grobHeight(title_g) + grid::unit(pad_pt, "pt")  # enough room for the text
+  
+  h <- grid::grobHeight(title_g) + grid::unit(pad_pt, "pt")
   gridExtra::arrangeGrob(title_g, g, ncol = 1,
                          heights = grid::unit.c(h, grid::unit(1, "null")))
 }
@@ -2117,7 +2134,7 @@ crop_image_by_percentage <- function(image, left_percent, right_percent, top_per
 # panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.6) |> # left_percent, right_percent, top_percent, bottom_percent
 panel_a <- crop_image_by_percentage(map_image, 0, 3.1, 5, 2.55) |> # left_percent, right_percent, top_percent, bottom_percent
   grDevices::as.raster() |> rasterGrob(interpolate = TRUE) |>
-  label_panel("A", col = "#333333") |>
+  label_panel("A", col = "#333333", fontsize = 12) |>
   add_tb_padding(top = 0.02, bottom = 0.005)
 
 ## --- plots (barplots) ---
@@ -2152,7 +2169,7 @@ panel_thermo_core <- grid.arrange(plot_Ta, plot_RH, plot_VPD, ncol = 1, heights 
 
 # Leave ~7% of the height for the header; tweak 0.04–0.08 to taste
 panel_hydro  <- overlay_header(panel_hydro_core,  left_lab = "B", title = "Water balance", 
-                               top_pad = 0.07, title_x = 0.6, title_hjust = 0.5)
+                               top_pad = 0.07, lab_size = 12, title_x = 0.6, title_hjust = 0.5)
 panel_thermo <- overlay_header(panel_thermo_core, left_lab = "",   title = "Atmospheric states",
                                top_pad = 0.07, title_x = 0.6, title_hjust = 0.5)
 
@@ -2233,7 +2250,7 @@ ggsave('../plots/ggplot2/Budyko_curve_ggplot2.png', plot = Budyko_plot, width = 
 
 ## --- bottom row: c | spacer | d ---
 panel_c <- Budyko_plot |>
-  label_panel("C", col = "#333333") |>
+  label_panel("C", col = "#333333", fontsize = 12) |>
   add_tb_padding(top = 0.01, bottom = 0.005)
 
 # <<----------------- Start of dTa vs. dVPD/VPD ------------------------------>>
@@ -2288,7 +2305,7 @@ p_Ta_VPDn <- p_Ta_VPDn + geom_line(data = DF1_CC_nonlinear, aes(x = X, y = Y), l
 # <<----------------- End of dTa vs. dVPD/VPD -------------------------------->>
 
 panel_d <- p_Ta_VPDn |>
-  label_panel("D", col = "#333333") |>
+  label_panel("D", col = "#333333", fontsize = 12) |>
   add_tb_padding(top = 0.01, bottom = 0.005)
 
 bottom_block <- grid.arrange(panel_c, nullGrob(), panel_d, ncol = 3, widths = c(2, 0.1, 2))
