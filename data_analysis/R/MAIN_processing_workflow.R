@@ -2299,7 +2299,8 @@ final_figure <- grid.arrange(top_block, bottom_block, ncol = 1, heights = c(1, 0
 # grid.newpage(); grid.draw(final_figure)
 # ggsave("../plots/ggplot2/Elevation_water_balance&atmosphere.png",
 ggsave("../plots/ggplot2/Domain_VPD_water_balance&atmosphere.png",
-       plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
+       #plot = final_figure, width = Pl_width*3*0.65, height = Pl_height*3.1*0.65,
+       plot = final_figure, width = 240, height = 248,
        # dpi = RES, units = "mm")
        dpi = 1200, units = "mm", bg = "white")
 
@@ -3098,7 +3099,7 @@ if(Fit_Jarvis){
   source("./src/Jarvis_model_min_max.R")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }else{
-  load("./RData/20251214_jarvis_objects.RData")
+  load("./RData/20251226_jarvis_objects.RData")
   list2env(jarvis_bundle, envir = .GlobalEnv)
 }
 
@@ -3107,21 +3108,21 @@ if(Fit_RF){
   source("./src/RF_hybrid_vpd_constrained_geff_et.R")
   list2env(rf_hybrid_bundle, envir = .GlobalEnv)
 }else{
-  load("./RData/20251214_RF_objects.RData")
+  load("./RData/20251226_RF_objects.RData")
   list2env(rf_hybrid_bundle, envir = .GlobalEnv)
 }
 
 source("./src/Jarvis&RF_permutation_importance.R")
 
 run_permutation_importance(
-  bundle_path = "./RData/20251214_jarvis_objects.RData",
+  bundle_path = "./RData/20251226_jarvis_objects.RData",
   perm_B = 1000,
   q_lo = 0.25,
   q_hi = 0.75
 )
 
 run_permutation_importance(
-  bundle_path = "./RData/20251214_RF_objects.RData",
+  bundle_path = "./RData/20251226_RF_objects.RData",
   perm_B = 1000,
   q_lo = 0.25,
   q_hi = 0.75
@@ -3130,21 +3131,21 @@ run_permutation_importance(
 source("./src/Jarvis&RF_ALE_plots.R")
 
 res_jarvis <- run_ALE_plots(
-  bundle_path = "./RData/20251214_jarvis_objects.RData",
+  bundle_path = "./RData/20251226_jarvis_objects.RData",
   n_bins = 50,
   smooth_span = 0.5
 )
 
 res_rf <- run_ALE_plots(
-  bundle_path = "./RData/20251214_RF_objects.RData",
+  bundle_path = "./RData/20251226_RF_objects.RData",
   n_bins = 50,
   smooth_span = 0.5
 )
 
 source("./src/Jarvis&RF_PDP_plots.R")
 
-res_j <- run_PDP_plots("./RData/20251214_jarvis_objects.RData")
-res_r <- run_PDP_plots("./RData/20251214_RF_objects.RData")
+res_j <- run_PDP_plots("./RData/20251226_jarvis_objects.RData")
+res_r <- run_PDP_plots("./RData/20251226_RF_objects.RData")
 
 pdp_jarvis <- res_j$pdp
 pdp_rf     <- res_r$pdp
@@ -3154,6 +3155,9 @@ pdp_rf     <- res_r$pdp
 jarvis_out <- jarvis_bundle$output_df
 rf_out <- rf_hybrid_bundle$output_df
 
+# # Ensure, there are no underscores in the model names
+# jarvis_out <- jarvis_out |> mutate(model = gsub("_", "-", model))
+# rf_out <- rf_out |> mutate(model = gsub("_", "-", model))
 
 # Predicted ET vs. observed RF
 make_scatter_plot(data = rf_out  |>
