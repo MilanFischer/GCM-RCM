@@ -5547,7 +5547,7 @@ make_scatter_plot(
     select(ensemble, model, color, fill, border, shape, linetype, x, y),
   FIT = FALSE, robust_regression = TRUE,
   xy_round = 0.05, xy_offset = 0.04,
-  x_lab = bquote("AI = PET/P"),  
+  x_lab = bquote("AI = PET/P"),
   y_lab = bquote("EI = ET/P"),
   hline = FALSE, vline = FALSE, one_to_one_line = FALSE,
   plot_labels = Plot_labels,
@@ -5603,6 +5603,126 @@ if (length(idx_pts_txt)) {
 }
 
 p <- add_manual_legend(p, x1 = 0.59, x2 = 0.64, y1 = 0.10, y2 = 0.05)
+
+# ggsave('../plots/ggplot2/BC_general_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+# p_BC <- p
+
+# Budyko curve
+budyko_obs <- tibble::tibble(
+  x = seq(1.8, 2.15, length.out = 80)
+) |>
+  dplyr::mutate(
+    y = 1 / (1 + (1 / x)^n_scalar)^(1 / n_scalar)
+  )
+
+# Apparent feedforward response
+ff_obs <- pred_df |>
+  dplyr::arrange(AI_hat) |>
+  dplyr::filter(AI_hat > 1.45, AI_hat < 2.0) |>
+  dplyr::transmute(x = AI_hat, y = EI_hat_J)
+
+new_pts <- dplyr::bind_rows(
+  budyko_obs,
+  budyko_obs |> dplyr::mutate(y = y + 0.01),
+  ff_obs,
+  ff_obs |> dplyr::mutate(y = y + 0.01)
+)
+
+# add obstacle points (visible or invisible)
+p <- p +
+  geom_point(
+    data = new_pts,
+    aes(x, y),
+    inherit.aes = FALSE,
+    alpha = 0  # set to 0 if you want them invisible
+  )
+
+repel_idx <- which(vapply(p$layers, function(l) inherits(l$geom, "GeomTextRepel"), logical(1)))
+stopifnot(length(repel_idx) == 1)
+
+L <- p$layers[[repel_idx]]
+
+# label column name used by repel layer (robust)
+lab_var <- rlang::as_name(L$mapping$label)
+
+# 1) remove any previously-added obstacle rows (prevents growth/duplicates)
+lab_data <- L$data %>%
+  filter(!is.na(.data[[lab_var]]), .data[[lab_var]] != "")
+
+# 2) grab the per-row colour vector for JUST the label rows
+col_vec <- L$aes_params$colour
+stopifnot(length(col_vec) == nrow(lab_data))
+
+# 3) rebuild repel data cleanly: labels + NEW obstacles
+repel_data <- bind_rows(
+  lab_data,
+  new_pts %>% mutate(!!lab_var := "")
+)
+
+# 4) store colours as a column so length matches new data
+repel_data$.repel_col <- c(col_vec, rep(NA, nrow(new_pts)))
+
+# 5) update the existing repel layer in-place (no re-adding!)
+L$data <- repel_data
+L$aes_params$colour <- NULL
+L$mapping$colour <- rlang::sym(".repel_col")
+
+# --- tweak repel behavior ---
+# L$geom_params$point.padding       <- 0.04   # 1e-6; distance between labels and points
+# L$geom_params$box.padding         <- 0.25    # 0.25; spacing around label boxes
+# L$geom_params$force               <- 1.5    # 1; repulsion strength
+# L$geom_params$force_pull          <- 1.2    # 1; pull toward anchor point
+# L$geom_params$max.overlaps        <- 10000     # 10; overlaps allowed before dropping labels
+# L$geom_params$max.iter            <- 20000  # 10000; max optimization iterations
+# L$geom_params$max.time            <- 1      # 0.5; max optimization time (seconds)
+# 
+# # leader line (segment) control
+# L$geom_params$min.segment.length  <- 5    # 0.5; suppress short leader lines
+# L$geom_params$segment.size        <- 0.5    # 0.5; thinner connector lines
+# L$geom_params$segment.alpha       <- 1    # 1; make connector lines subtle
+# ---------------------------
+
+p$layers[[repel_idx]] <- L
+
+ggsave('../plots/ggplot2/BC_general_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+library(geomtextpath)
+
+budyko_df <- tibble::tibble(
+  AI = seq(from = xr[1], to = xr[2], length.out = 400)
+) |>
+  dplyr::mutate(
+    EI = 1 / (1 + (1 / AI)^n_scalar)^(1 / n_scalar)
+  )
+
+p <- p +
+  geom_textpath(
+    data = budyko_df |> dplyr::filter(AI > 1.8, AI < 2.3),
+    aes(x = AI, y = EI, label = "Budyko curve"),
+    linewidth = 0,
+    inherit.aes = FALSE,
+    color = "grey40",
+    size = 3.0,
+    vjust = 0,              # push label slightly above line
+    hjust = 0.5,               # centered along path
+    offset = unit(1, "mm")   # extra separation from the line
+  )
+
+p <- p +
+  geom_textpath(
+    data = pred_df |>
+      dplyr::arrange(AI_hat) |>
+      dplyr::filter(AI_hat > 1.45, AI_hat < 2.1),
+    aes(x = AI_hat, y = EI_hat_J, label = "Apparent feedforward response"),
+    linewidth = 0,
+    inherit.aes = FALSE,
+    size = 3.0,
+    hjust = 0.5,
+    vjust = 0,
+    offset = unit(0.7, "mm")   # ABOVE the dashed curve
+
+  )
 
 ggsave('../plots/ggplot2/BC_general_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 

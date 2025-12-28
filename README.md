@@ -5,7 +5,7 @@ Scripts for downloading, preprocessing, and analyzing CMIP5/CMIP6 global climate
 ## About
 This repository contains the analysis workflow used in the manuscript:
 
-> *A dialogue concerning hydroclimatic projections by global and regional climate models in Central Europe*
+> *A dialogue concerning hydroclimatic projections from global and regional climate models in Central Europe*
 
 The focus is on hydroclimatic diagnostics (e.g., evapotranspiration, vapor pressure deficit, Budyko framework, effective conductance diagnostics) and on characterizing ensemble behavior across GCM and RCM simulations.
 
