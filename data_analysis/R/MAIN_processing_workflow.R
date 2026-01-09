@@ -4731,6 +4731,34 @@ ggsave('../plots/ggplot2/AI_hist_vs_AI_RCP_ggplot2_TIDY.png', plot = p_AI_AI_RCP
 make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
                                       hist = "1981_2005",
                                       fut  = "2076_2100",
+                                      vars = c("VPD", "AI_FAO56_alfalfa"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = VPD_hist, y = AI_FAO56_alfalfa_fut - AI_FAO56_alfalfa_hist, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]),  y_lab = bquote(Delta*AI),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_dAI_VPD_hist")
+# Save the plot
+ggsave('../plots/ggplot2/delta_AI_vs_VPD_hist_ggplot2_TIDY.png', plot = p_dAI_VPD_hist, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
+                                      vars = c("VPD", "EI"),
+                                      by   = c("ensemble","model")) |>
+                    mutate(x = VPD_hist, y = EI_fut - EI_hist, model = interaction(model, drop = TRUE)) |>
+                    select(ensemble, model, color, fill, border, shape, linetype, x, y),
+                  FIT = TRUE, xy_round = 0.05, xy_offset = 0.04,
+                  x_lab = bquote(VPD["1981–2005"]),  y_lab = bquote(Delta*EI),
+                  hline = TRUE, vline = FALSE, one_to_one_line = FALSE, robust_regression = TRUE,
+                  save_ggplot2_obj_as="p_dEI_VPD_hist")
+# Save the plot
+ggsave('../plots/ggplot2/delta_EI_vs_VPD_hist_ggplot2_TIDY.png', plot = p_dEI_VPD_hist, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
+
+make_scatter_plot(data = pair_periods(df   = Data_to_plot$abs,
+                                      hist = "1981_2005",
+                                      fut  = "2076_2100",
                                       vars = c("ET", "ETo_FAO56_alfalfa"),
                                       by   = c("ensemble","model")) |>
                     mutate(x = ET_hist / ETo_FAO56_alfalfa_hist, y = ET_fut/ ETo_FAO56_alfalfa_fut, model = interaction(model, drop = TRUE)) |>

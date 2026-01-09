@@ -178,7 +178,7 @@ VPD_ann_filt[ abs(lat_r) > 66.5 ] <- NA
 
 writeCDF(VPD_ann_filt, "AFFM.nc", overwrite=TRUE)
 
-plot(VPD_ann_filt)
+plot(VPD_ann_filt, col = "blue")
 lines(land_v)
 
 library(sf)
@@ -378,5 +378,294 @@ ggsave("VPD_hatched_feedforward_mechanism.png", p_h_AFFM_VPD , width = 10, heigh
 
 # Save
 saveRDS(p_h_AFFM_VPD, "p_h_AFFM_VPD.rds")
+
+################################################################################
+
+# ---- Plot (one-color filled mask) ----
+p_h_AFFM_VPD <- ggplot() +
+  geom_sf(data = grat_in, color = "grey65", linewidth = 0.25, linetype = "dotted") +
+  
+  # Mask as semi-transparent fill (no hatching)
+  geom_sf(data = mask_p, fill = "#2C7FB8", color = NA, alpha = 0.35) +
+  
+  geom_sf(data = coast_p, color = "grey40", linewidth = 0.32) +
+  geom_sf(data = frame_p, fill = NA, color = "grey20", linewidth = 0.4) +
+  
+  # Study domain box (optional but helpful)
+  geom_sf(data = st_transform(AOI_polygon, crs_proj), fill = NA, color = "#8B1E1E", linewidth = 0.8) +
+  
+  coord_sf(crs = sf::st_crs(crs_proj),
+           xlim = xlim_ex, ylim = ylim_ex,
+           expand = FALSE, clip = "off") +
+  theme_void() +
+  theme(
+    plot.margin = margin(1, 10, 1, 10, "mm"),
+    panel.background = element_rect(fill = "white", color = NA)
+  )
+
+
+################################################################################
+# ---- Prepare land for plotting (projected) ----
+land_p <- st_transform(land_union, crs_proj)
+
+# ---- Plot ----
+p_h_AFFM_VPD <- ggplot() +
+  
+  # Ocean background = filled projection frame
+  geom_sf(
+    data = frame_p,
+    fill = "#EEF3F8",
+    color = NA
+  ) +
+  
+  # Land fill (very light grey)
+  geom_sf(
+    data = land_p,
+    fill = "#F2F2F2",
+    color = NA
+  ) +
+  
+  # Diagnostic mask (single-color, semi-transparent)
+  geom_sf(
+    data = mask_p,
+    fill = "#2C7FB8",
+    color = NA,
+    alpha = 0.35
+  ) +
+  
+  # Graticule (subtle)
+  geom_sf(
+    data = grat_in,
+    color = "grey65",
+    linewidth = 0.25,
+    linetype = "dotted"
+  ) +
+  
+  # Coastlines
+  geom_sf(
+    data = coast_p,
+    color = "grey40",
+    linewidth = 0.32
+  ) +
+  
+  # Map frame
+  geom_sf(
+    data = frame_p,
+    fill = NA,
+    color = "grey20",
+    linewidth = 0.4
+  ) +
+  
+  # Central Europe study domain
+  geom_sf(
+    data = st_transform(AOI_polygon, crs_proj),
+    fill = NA,
+    color = "#8B1E1E",
+    linewidth = 0.8
+  ) +
+  
+  coord_sf(
+    crs = sf::st_crs(crs_proj),
+    xlim = xlim_ex,
+    ylim = ylim_ex,
+    expand = FALSE,
+    clip = "off"
+  ) +
+  
+  theme_void() +
+  theme(
+    plot.margin = margin(1, 10, 1, 10, "mm"),
+    panel.background = element_rect(fill = "white", color = NA)
+  )
+
+# ---- Save ----
+ggsave(
+  "VPD_feedforward_diagnostic_map.png",
+  p_h_AFFM_VPD,
+  width = 10,
+  height = 4.9,
+  dpi = 800,
+  bg = "white"
+)
+
+################################################################################
+# ---- Plot: more visually appealing version ----
+
+# IMPORTANT for polygon boolean ops with dateline-wrapped geometries
+sf::sf_use_s2(FALSE)
+
+# 1) Land in lon/lat, dateline-safe, unioned, valid
+land_ll <- rnaturalearth::ne_download(
+  scale = "medium", type = "land", category = "physical", returnclass = "sf"
+) |>
+  st_make_valid() |>
+  st_wrap_dateline(options = c("WRAPDATELINE=YES","DATELINEOFFSET=180")) |>
+  st_make_valid()
+
+land_union_ll <- st_union(land_ll) |> st_make_valid()
+
+# 2) Your frame in lon/lat (you already have frame_ll from mk_frame_ll)
+# Make sure it's valid too
+frame_ll <- st_make_valid(frame_ll)
+
+# 3) Compute ocean explicitly in lon/lat (this is the key change)
+ocean_ll <- st_difference(frame_ll, land_union_ll) |> st_make_valid()
+
+# 4) Now project both to Equal Earth (or whatever crs_proj is)
+land_p  <- st_transform(land_union_ll, crs_proj)
+ocean_p <- st_transform(ocean_ll,      crs_proj)
+
+
+# 1
+p_h_AFFM_VPD <- ggplot() +
+  
+  # Ocean background (clipped to globe)
+  geom_sf(data = frame_p, fill = "#EEF3F8", color = NA) +
+  
+  # Land (very light)
+  geom_sf(data = land_p, fill = "#F6F6F6", color = NA) +
+  
+  # Diagnostic mask (slightly stronger + optional subtle edge)
+  geom_sf(data = mask_p, fill = "#3B82B8", color = NA, alpha = 0.60) +
+  # Optional: a faint edge to help definition at small size
+  # geom_sf(data = mask_p, fill = NA, color = "#3B82B8", linewidth = 0.12, alpha = 0.35) +
+  
+  # Graticule (lighter + thinner)
+  geom_sf(data = grat_in, color = "grey75", linewidth = 0.18, linetype = "dotted") +
+  
+  # Coastlines (lighter and a bit thinner)
+  geom_sf(data = coast_p, color = "grey45", linewidth = 0.26) +
+  
+  # Study domain: soft fill + crisp outline
+  geom_sf(
+    data = st_transform(AOI_polygon, crs_proj),
+    fill = "#8B1E1E", alpha = 0.12,
+    color = "#8B1E1E", linewidth = 0.85
+  ) +
+  
+  # Frame outline (slightly lighter than before)
+  geom_sf(data = frame_p, fill = NA, color = "grey35", linewidth = 0.35) +
+  
+  coord_sf(
+    crs = sf::st_crs(crs_proj),
+    xlim = xlim_ex, ylim = ylim_ex,
+    expand = FALSE, clip = "off"
+  ) +
+  
+  theme_void() +
+  theme(
+    plot.margin = margin(1, 10, 1, 10, "mm"),
+    panel.background = element_rect(fill = "white", color = NA)
+  )
+
+# 
+# p_h_AFFM_VPD <- p_h_AFFM_VPD +
+#   annotate("text", x = st_coordinates(st_centroid(st_transform(AOI_polygon, crs_proj)))[1],
+#            y = st_coordinates(st_centroid(st_transform(AOI_polygon, crs_proj)))[2] + 500000,
+#            label = "Study domain", size = 3.2, color = "#8B1E1E")
+
+ggsave("VPD_feedforward_diagnostic_map_pretty_01.png", p_h_AFFM_VPD,
+       width = 10, height = 4.9, dpi = 800, bg = "white")
+
+
+# 2
+p_h_AFFM_VPD <- ggplot() +
+  geom_sf(data = frame_p, fill = "#F1F4F6", color = NA) +
+  geom_sf(data = land_p,  fill = "#F5F3EF", color = NA) +
+  
+  geom_sf(data = mask_p,
+          fill = "#4C8DAE",
+          color = NA,
+          alpha = 0.45) +
+  
+  geom_sf(data = grat_in, color = "grey78", linewidth = 0.18, linetype = "dotted") +
+  geom_sf(data = coast_p, color = "grey45", linewidth = 0.26) +
+  
+  geom_sf(data = st_transform(AOI_polygon, crs_proj),
+          fill = "#7A1F1F", alpha = 0.12,
+          color = "#7A1F1F", linewidth = 0.85) +
+  
+  geom_sf(data = frame_p, fill = NA, color = "grey35", linewidth = 0.35) +
+  coord_sf(crs = sf::st_crs(crs_proj),
+           xlim = xlim_ex, ylim = ylim_ex,
+           expand = FALSE, clip = "off") +
+  theme_void()
+
+ggsave("VPD_feedforward_diagnostic_map_pretty_02.png", p_h_AFFM_VPD,
+       width = 10, height = 4.9, dpi = 800, bg = "white")
+
+#3
+p_h_AFFM_VPD <- ggplot() +
+  geom_sf(data = frame_p, fill = "#EFEDE9", color = NA) +
+  geom_sf(data = land_p,  fill = "#F3F6F8", color = NA) +
+
+  geom_sf(data = mask_p,
+          fill = "#5B7FA6",
+          color = NA,
+          alpha = 0.40) +
+  
+  geom_sf(data = grat_in, color = "grey78", linewidth = 0.18, linetype = "dotted") +
+  geom_sf(data = coast_p, color = "grey45", linewidth = 0.26) +
+  
+  geom_sf(data = st_transform(AOI_polygon, crs_proj),
+          fill = "#7A1F1F", alpha = 0.12,
+          color = "#7A1F1F", linewidth = 0.85) +
+  
+  geom_sf(data = frame_p, fill = NA, color = "grey35", linewidth = 0.35) +
+  coord_sf(crs = sf::st_crs(crs_proj),
+           xlim = xlim_ex, ylim = ylim_ex,
+           expand = FALSE, clip = "off") +
+  theme_void()
+
+ggsave("VPD_feedforward_diagnostic_map_pretty_03.png", p_h_AFFM_VPD,
+       width = 10, height = 4.9, dpi = 800, bg = "white")
+
+#4
+p_h_AFFM_VPD <- ggplot() +
+  geom_sf(data = frame_p, fill = "#F2F4F3", color = NA) +
+  geom_sf(data = land_p,  fill = "#F4F2EE", color = NA) +
+
+  # geom_sf(data = mask_p,
+  #         fill = "#7A8F6B",
+  #         color = NA,
+  #         alpha = 0.60) +
+  geom_sf(data = mask_p,
+          fill = "#7A8F6B",
+          color = "#7A8F6B",
+          linewidth = 0.05,
+          alpha = 0.45) +
+  
+  geom_sf(data = grat_in, color = "grey78", linewidth = 0.18, linetype = "dotted") +
+  geom_sf(data = coast_p, color = "grey45", linewidth = 0.26) +
+  
+  geom_sf(data = st_transform(AOI_polygon, crs_proj),
+          fill = "#6E1E1E", alpha = 0.12,
+          color = "#6E1E1E", linewidth = 0.85) +
+          # fill = "black", alpha = 0.12,
+          # color = "black", linewidth = 0.85) +
+  
+  geom_sf(data = frame_p, fill = NA, color = "grey35", linewidth = 0.35) +
+  coord_sf(crs = sf::st_crs(crs_proj),
+           xlim = xlim_ex, ylim = ylim_ex,
+           expand = FALSE, clip = "off") +
+  theme_void()
+
+ggsave("VPD_feedforward_diagnostic_map_pretty_04.png", p_h_AFFM_VPD,
+       width = 10, height = 4.9, dpi = 800, bg = "white")
+
+
+################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
 
 
