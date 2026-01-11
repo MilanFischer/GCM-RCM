@@ -2845,7 +2845,7 @@ sign <- if (b1 >= 0) "+" else "−"
 # eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
 #                     b0, sign, abs(b1), r2)
 eq_label <- sprintf(
-  "y = %.2f %s %.2f x\nR\u00B2 = %.2f",
+  "y = %.2f %s %.2fx\nR\u00B2 = %.2f",
   b0, sign, abs(b1), r2
 )
 
@@ -5773,6 +5773,60 @@ make_scatter_plot(
 ggsave('../plots/ggplot2/EI_resids_ggplot2_TIDY.png', plot = p, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 
 p_EI_resids <- p
+
+# 1) Extract the first point layer from `p`
+idx_pt <- which(vapply(p_EI_resids$layers, function(l) inherits(l$geom, "GeomPoint"), logical(1)))[1]
+stopifnot(!is.na(idx_pt))  # ensure we found a point layer
+
+pts <- layer_data(p_EI_resids, idx_pt)
+pts <- pts[is.finite(pts$x) & is.finite(pts$y), ]  # keep valid points
+
+# 2) Fit OLS on the plotted coordinates (same space as the plot)
+fit <- lm(y ~ x, data = pts)
+b0  <- unname(coef(fit)[1])
+b1  <- unname(coef(fit)[2])
+r2  <- summary(fit)$r.squared
+
+summary(fit)
+
+# Build a pretty, signed label with 2 decimals
+sign <- if (b1 >= 0) "+" else "−"
+# eq_label <- sprintf("y = %.2f %s %.2fx; R\u00B2 = %.2f",
+#                     b0, sign, abs(b1), r2)
+eq_label <- sprintf(
+  "y = %.2f %s %.2fx\nR\u00B2 = %.2f",
+  b0, sign, abs(b1), r2
+)
+
+# 3) Add line + 95% CI and the equation label (top-left)
+plot_data <- ggplot_build(p_EI_resids)
+X_range <- plot_data$layout$panel_params[[1]]$x.range
+Y_range <- plot_data$layout$panel_params[[1]]$y.range
+
+p_EI_resids <- p_EI_resids +
+  geom_smooth(
+    data = pts,
+    aes(x = x, y = y),
+    method = "lm", formula = y ~ x,
+    se = TRUE,
+    inherit.aes = FALSE,
+    color = "black", fill = "grey40", alpha = 0.25, linewidth = 0.6
+  ) +
+  annotate("text",
+           # x = rescale(0.54, X_range), y = rescale(0.05, Y_range), label = eq_label,
+           x = rescale(0.69, X_range), y = rescale(0.93, Y_range), label = eq_label,
+           hjust = 0, vjust = 0.5, size = 3.6)
+
+# Identify layers that are GeomPoint or GeomTextRepel
+idx_pts_txt <- which(vapply(p_EI_resids$layers,
+                            function(l) inherits(l$geom, c("GeomPoint", "GeomTextRepel", "GeomLabelRepel")),
+                            logical(1)))
+
+# Move them to the end so they draw last (on top of lines etc.)
+if (length(idx_pts_txt)) {
+  p_EI_resids$layers <- c(p_EI_resids$layers[-idx_pts_txt], p_EI_resids$layers[idx_pts_txt])
+}
+ggsave('../plots/ggplot2/EI_resids_ggplot2_TIDY.png', plot = p_EI_resids, width = Pl_width, height = Pl_height, dpi = RES, units = 'mm')
 #-------------------------------------------------------------------------------
 
 #--------------
@@ -5830,4 +5884,3 @@ ggsave("../plots/ggplot2/combined_BC,EI,omega_ggplot2_TIDY.png", combined,
 # - what if one single omega is fitted and the difference is in ET or EI are analysed in repsonse to VPD?
 # - determine what should be a reduction of rs in PM that would ensure that all models are following the same BC
 # - check in BC why the in the energy-limited region the gray line does not origin in zero-zero
-

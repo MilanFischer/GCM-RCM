@@ -653,10 +653,103 @@ p_h_AFFM_VPD <- ggplot() +
 ggsave("VPD_feedforward_diagnostic_map_pretty_04.png", p_h_AFFM_VPD,
        width = 10, height = 4.9, dpi = 800, bg = "white")
 
+# 5
+p_h_AFFM_VPD <- ggplot() +
+  
+  # Ocean background (clipped to globe)
+  geom_sf(data = frame_p, fill = "#EEF3F8", color = NA) +
+  
+  # Land (very light)
+  geom_sf(data = land_p, fill = "#F6F6F6", color = NA) +
+  
+  # Diagnostic mask (slightly stronger + optional subtle edge)
+  geom_sf(data = mask_p, fill = "#7A8F6B", color = NA, alpha = 0.80) +
+  # Optional: a faint edge to help definition at small size
+  # geom_sf(data = mask_p, fill = NA, color = "#3B82B8", linewidth = 0.12, alpha = 0.35) +
+  
+  # Graticule (lighter + thinner)
+  geom_sf(data = grat_in, color = "grey75", linewidth = 0.18, linetype = "dotted") +
+  
+  # Coastlines (lighter and a bit thinner)
+  geom_sf(data = coast_p, color = "grey45", linewidth = 0.26) +
+  
+  # Study domain: soft fill + crisp outline
+  geom_sf(
+    data = st_transform(AOI_polygon, crs_proj),
+    fill = "#8B1E1E", alpha = 0.12,
+    color = "#8B1E1E", linewidth = 0.85
+  ) +
+  
+  # Frame outline (slightly lighter than before)
+  geom_sf(data = frame_p, fill = NA, color = "grey35", linewidth = 0.35) +
+  
+  coord_sf(
+    crs = sf::st_crs(crs_proj),
+    xlim = xlim_ex, ylim = ylim_ex,
+    expand = FALSE, clip = "off"
+  ) +
+  
+  theme_void() +
+  theme(
+    plot.margin = margin(1, 10, 1, 10, "mm"),
+    panel.background = element_rect(fill = "white", color = NA)
+  )
 
+# 
+# p_h_AFFM_VPD <- p_h_AFFM_VPD +
+#   annotate("text", x = st_coordinates(st_centroid(st_transform(AOI_polygon, crs_proj)))[1],
+#            y = st_coordinates(st_centroid(st_transform(AOI_polygon, crs_proj)))[2] + 500000,
+#            label = "Study domain", size = 3.2, color = "#8B1E1E")
+
+ggsave("VPD_feedforward_diagnostic_map_pretty_05.png", p_h_AFFM_VPD,
+       width = 10, height = 4.9, dpi = 1000, bg = "white")
 ################################################################################
 
+# 5
+p_h_AFFM_VPD <- ggplot() +
+  
+  # Ocean background (clipped to globe)
+  geom_sf(data = frame_p, fill = "#EEF3F8", color = NA) +
+  
+  # Land (very light)
+  geom_sf(data = land_p, fill = "#F6F6F6", color = NA) +
+  
+  # Diagnostic mask (slightly stronger + optional subtle edge)
+  geom_sf(data = mask_p, fill = "#7A8F6B", color = NA, alpha = 0.80) +
+  # Optional: a faint edge to help definition at small size
+  # geom_sf(data = mask_p, fill = NA, color = "#3B82B8", linewidth = 0.12, alpha = 0.35) +
+  
+  # Graticule (lighter + thinner)
+  geom_sf(data = grat_in, color = "grey75", linewidth = 0.18, linetype = "dotted") +
+  
+  # Coastlines (lighter and a bit thinner)
+  geom_sf(data = coast_p, color = "grey45", linewidth = 0.26) +
+  
+  # Study domain: soft fill + crisp outline
+  geom_sf(
+    data = st_transform(AOI_polygon, crs_proj),
+    fill = "#ff4500", alpha = 0.01,
+    color = "#ff4500", linewidth = 0.4
+  ) +
+  
+  # Frame outline (slightly lighter than before)
+  geom_sf(data = frame_p, fill = NA, color = "grey35", linewidth = 0.35) +
+  
+  coord_sf(
+    crs = sf::st_crs(crs_proj),
+    xlim = xlim_ex, ylim = ylim_ex,
+    expand = FALSE, clip = "off"
+  ) +
+  
+  theme_void() +
+  theme(
+    plot.margin = margin(1, 10, 1, 10, "mm"),
+    panel.background = element_rect(fill = "white", color = NA)
+  )
 
+ggsave("VPD_feedforward_diagnostic_map_pretty_06.png", p_h_AFFM_VPD,
+       width = 10, height = 4.9, dpi = 1000, bg = "white")
+################################################################################
 
 
 
